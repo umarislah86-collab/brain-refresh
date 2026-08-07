@@ -138,7 +138,31 @@
     background: #2e0d0d;
     color: #f87171;
   }
+  .option.selected {
+    border-color: #a78bfa;
+    background: #1e1e3a;
+    color: #fff;
+  }
   .option:disabled { cursor: default; }
+
+  /* ---- SUBMIT BUTTON ---- */
+  .submit-btn {
+    display: none;
+    margin-top: 14px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+  }
+  .submit-btn:hover { background: #6d28d9; }
+  .submit-btn.show { display: block; }
 
   /* ---- FEEDBACK ---- */
   .feedback {
@@ -348,7 +372,7 @@
     <div class="intro">
       <h2>Ready to think?</h2>
       <p class="sub">You'll get one question from every category — a true test across the board.</p>
-      <p class="sub2">10 questions &bull; 30 seconds each &bull; instant explanations</p>
+      <p class="sub2">15 questions &bull; 30 seconds each &bull; instant explanations</p>
       <div class="cat-preview" id="catPreview"></div>
       <button class="start-btn" onclick="startQuiz()">Start Quiz</button>
     </div>
@@ -369,6 +393,7 @@
       <div class="question-text" id="questionText"></div>
       <div class="question-num" id="questionNum"></div>
       <div class="options" id="optionsGrid"></div>
+      <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">Submit Answer</button>
       <div class="feedback" id="feedback"></div>
       <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next Question →</button>
     </div>
@@ -768,6 +793,40 @@ const ALL_QUESTIONS = [
   { category: "Verbal", q: "What is the antonym of 'Benevolent'?", options: ["Malevolent", "Generous", "Kind", "Charitable"], answer: 0, explanation: "Benevolent means well-wishing and kind. Malevolent means wishing evil — its direct opposite." },
   { category: "Verbal", q: "Which word means 'to make something worse'?", options: ["Exacerbate", "Alleviate", "Mitigate", "Ameliorate"], answer: 0, explanation: "Exacerbate means to make a problem worse. The others all mean to improve or reduce." },
   { category: "Verbal", q: "What does 'Ubiquitous' mean?", options: ["Present everywhere", "Unique and rare", "Very large", "Moving quickly"], answer: 0, explanation: "Ubiquitous means appearing or found everywhere, seemingly all at once." }
+  // --- GEOGRAPHY & FLAGS ---
+  { category: "Geography", q: "Which country does this flag belong to? 🇯🇵", options: ["Japan", "China", "South Korea", "Taiwan"], answer: 0, explanation: "The Japanese flag (Nisshōki) features a red circle on white, representing the sun." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇧🇷", options: ["Brazil", "Argentina", "Bolivia", "Venezuela"], answer: 0, explanation: "Brazil's flag is green and yellow with a blue globe — the only South American flag with those colours." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇸🇦", options: ["Saudi Arabia", "UAE", "Oman", "Qatar"], answer: 0, explanation: "Saudi Arabia's flag features the Shahada (Islamic declaration of faith) and a sword." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇹🇷", options: ["Turkey", "Tunisia", "Pakistan", "Azerbaijan"], answer: 0, explanation: "Turkey's flag has a white crescent and star on red — one of the oldest national flag designs." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇦🇺", options: ["Australia", "New Zealand", "Fiji", "Tuvalu"], answer: 0, explanation: "Australia's flag features the Union Jack, the Southern Cross, and the Commonwealth Star." },
+  { category: "Geography", q: "What is the capital of Brazil?", options: ["Brasília", "São Paulo", "Rio de Janeiro", "Salvador"], answer: 0, explanation: "Brasília replaced Rio de Janeiro as capital in 1960 — it was purpose-built in just 41 months." },
+  { category: "Geography", q: "Which is the largest country in the world by area?", options: ["Russia", "Canada", "China", "USA"], answer: 0, explanation: "Russia covers 17.1 million km² — nearly twice the size of second-place Canada." },
+  { category: "Geography", q: "What is the capital of Canada?", options: ["Ottawa", "Toronto", "Vancouver", "Montreal"], answer: 0, explanation: "Ottawa is Canada's capital — a common trick question since Toronto is the largest city." },
+  { category: "Geography", q: "The Amazon River flows primarily through which country?", options: ["Brazil", "Peru", "Colombia", "Venezuela"], answer: 0, explanation: "About 60% of the Amazon basin lies within Brazil, though the river's source is in Peru." },
+  { category: "Geography", q: "Which ocean is the deepest?", options: ["Pacific", "Atlantic", "Indian", "Arctic"], answer: 0, explanation: "The Mariana Trench in the Pacific Ocean is the deepest point on Earth at ~11,000 metres." },
+  { category: "Geography", q: "Which country has the most natural lakes?", options: ["Canada", "Russia", "Brazil", "USA"], answer: 0, explanation: "Canada has over 3 million lakes — more than any other country in the world." },
+  { category: "Geography", q: "What is the capital of Turkey?", options: ["Ankara", "Istanbul", "Izmir", "Bursa"], answer: 0, explanation: "Ankara is Turkey's capital since 1923. Istanbul is the largest city but not the capital." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇲🇾", options: ["Malaysia", "Indonesia", "Brunei", "Singapore"], answer: 0, explanation: "Malaysia's Jalur Gemilang (Stripes of Glory) has 14 red-and-white stripes and a crescent with a 14-pointed star." },
+  { category: "Geography", q: "The Sahara Desert is located on which continent?", options: ["Africa", "Asia", "Australia", "South America"], answer: 0, explanation: "The Sahara is the world's largest hot desert, covering much of North Africa." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇵🇸", options: ["Palestine", "Jordan", "Sudan", "Yemen"], answer: 0, explanation: "The Palestinian flag features the Pan-Arab colours: black, white, green horizontal stripes with a red triangle." },
+  { category: "Geography", q: "What is the longest mountain range in the world?", options: ["The Andes", "The Himalayas", "The Rockies", "The Alps"], answer: 0, explanation: "The Andes in South America stretch ~7,000 km — the world's longest continental mountain range." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇮🇩", options: ["Indonesia", "Monaco", "Poland", "Singapore"], answer: 0, explanation: "Indonesia's flag (Sang Saka Merah-Putih) is red over white, almost identical to Monaco's but larger." },
+  { category: "Geography", q: "In which continent is the Nile River located?", options: ["Africa", "Asia", "South America", "Europe"], answer: 0, explanation: "The Nile flows northward through northeastern Africa, passing through 11 countries." },
+  { category: "Geography", q: "What is the smallest continent by area?", options: ["Australia", "Europe", "Antarctica", "South America"], answer: 0, explanation: "Australia (Oceania) is the smallest continent at about 7.7 million km²." },
+  { category: "Geography", q: "Which country does this flag belong to? 🇸🇬", options: ["Singapore", "Indonesia", "Malaysia", "Brunei"], answer: 0, explanation: "Singapore's flag has a red upper half and white lower half, with a crescent moon and five stars." },
+
+  // --- VISUAL IQ ---
+  { category: "Visual IQ", q: "Which shape comes next in the pattern?\n⬛⬜⬛⬜⬛⬜ → ?", options: ["⬛", "⬜", "🔲", "◼"], answer: 0, explanation: "The pattern alternates black and white. After white (⬜), the next is black (⬛)." },
+  { category: "Visual IQ", q: "Complete the pattern: 🔴🔵🔴🔵🔴 → ?", options: ["🔵", "🔴", "🟡", "🟢"], answer: 0, explanation: "Simple alternating pattern: red, blue, red, blue, red... next is blue." },
+  { category: "Visual IQ", q: "Which is the odd one out?\n🟦🟦🟥🟦🟦", options: ["🟥", "🟦 (first)", "🟦 (last)", "None"], answer: 0, explanation: "The red square (🟥) is the only different element among the blue squares." },
+  { category: "Visual IQ", q: "How many triangles are in a Star of David (✡)?", options: ["2", "6", "12", "8"], answer: 0, explanation: "A Star of David is formed by 2 overlapping triangles — one pointing up, one pointing down." },
+  { category: "Visual IQ", q: "A clock shows 3:15. What is the angle between the hour and minute hands?", options: ["7.5°", "0°", "90°", "45°"], answer: 0, explanation: "At 3:00 the angle is 90°. By 3:15 the hour hand moves 7.5° further, making the angle 90° - 7.5° = 7.5°." },
+  { category: "Visual IQ", q: "Complete the sequence: 🟡🟡🔵 🟡🟡🔵 🟡🟡 → ?", options: ["🔵", "🟡", "🔴", "🟢"], answer: 0, explanation: "The pattern is two yellows followed by one blue, repeating. Next must be blue." },
+  { category: "Visual IQ", q: "How many squares are in a 3×3 grid (counting all sizes)?", options: ["14", "9", "12", "16"], answer: 0, explanation: "Nine 1×1 squares + four 2×2 squares + one 3×3 square = 14 total squares." },
+  { category: "Visual IQ", q: "A cube has 6 faces. If you unfold it flat, which shape do you get?", options: ["A cross shape (6 connected squares)", "A rectangle", "A hexagon", "A star"], answer: 0, explanation: "Unfolding a cube produces a cross-shaped net of 6 connected squares — one of 11 possible nets." },
+  { category: "Visual IQ", q: "Which number is missing? 1️⃣ 4️⃣ 9️⃣ ❓ 2️⃣5️⃣", options: ["16", "12", "15", "18"], answer: 0, explanation: "These are perfect squares: 1, 4, 9, 16, 25. The missing number is 16 (4²)." },
+  { category: "Visual IQ", q: "If you rotate the letter 'p' 180°, what letter does it resemble?", options: ["d", "b", "q", "n"], answer: 0, explanation: "Rotating 'p' 180° (upside down AND mirrored) gives 'd'." },
+
 ];
 
 const TIMER_SECONDS = 30;
@@ -778,7 +837,57 @@ let streak = 0;
 let timerInterval = null;
 let timeLeft = TIMER_SECONDS;
 let answered = false;
+let selectedOption = null;
 let currentUsername = '';
+
+// --- SOUND ENGINE (Web Audio API — no files needed) ---
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  return audioCtx;
+}
+function playTone(freq, type, duration, vol = 0.3) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(); osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+function soundCorrect() {
+  playTone(523, 'sine', 0.12);
+  setTimeout(() => playTone(659, 'sine', 0.12), 100);
+  setTimeout(() => playTone(784, 'sine', 0.2), 200);
+}
+function soundWrong() {
+  playTone(300, 'sawtooth', 0.15, 0.2);
+  setTimeout(() => playTone(220, 'sawtooth', 0.2, 0.2), 120);
+}
+function soundTick() { playTone(880, 'sine', 0.05, 0.1); }
+function soundTimeUp() {
+  playTone(440, 'square', 0.1, 0.2);
+  setTimeout(() => playTone(330, 'square', 0.2, 0.2), 100);
+}
+
+// --- SMART RANDOMIZATION (localStorage) ---
+const SEEN_KEY = 'br_seen_ids';
+function getSeenIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); } catch(e) { return new Set(); }
+}
+function markSeen(ids) {
+  try {
+    let seen = getSeenIds();
+    ids.forEach(id => seen.add(id));
+    // If we've seen everything, reset so it cycles again
+    if (seen.size >= ALL_QUESTIONS.length) seen = new Set(ids);
+    localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+  } catch(e) {}
+}
 
 function shuffle(arr) {
   const a = [...arr];
@@ -787,6 +896,14 @@ function shuffle(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+// --- BUILD QUIZ: prefer unseen questions ---
+function buildQuestions() {
+  const seen = getSeenIds();
+  const unseen = ALL_QUESTIONS.filter((_, i) => !seen.has(i));
+  const pool = unseen.length >= 15 ? unseen : ALL_QUESTIONS;
+  return shuffle(pool).slice(0, 15);
 }
 
 // --- USERNAME ---
@@ -801,8 +918,6 @@ function proceedToQuiz() {
   currentUsername = val;
   document.getElementById('usernameScreen').style.display = 'none';
   document.getElementById('introScreen').style.display = 'block';
-
-  // Populate category preview chips
   const cats = [...new Set(ALL_QUESTIONS.map(q => q.category))].sort();
   const preview = document.getElementById('catPreview');
   preview.innerHTML = '';
@@ -814,23 +929,9 @@ function proceedToQuiz() {
   });
 }
 
-// --- BUILD QUIZ: one question per category, shuffled ---
-function buildQuestions() {
-  const cats = [...new Set(ALL_QUESTIONS.map(q => q.category))];
-  const picked = [];
-  cats.forEach(cat => {
-    const pool = ALL_QUESTIONS.filter(q => q.category === cat);
-    const rand = pool[Math.floor(Math.random() * pool.length)];
-    picked.push(rand);
-  });
-  return shuffle(picked);
-}
-
 function startQuiz() {
   questions = buildQuestions();
-  current = 0;
-  score = 0;
-  streak = 0;
+  current = 0; score = 0; streak = 0;
   document.getElementById('introScreen').style.display = 'none';
   document.getElementById('quizScreen').style.display = 'block';
   document.getElementById('qTotal').textContent = questions.length;
@@ -839,6 +940,7 @@ function startQuiz() {
 
 function loadQuestion() {
   answered = false;
+  selectedOption = null;
   const q = questions[current];
   document.getElementById('qNum').textContent = current + 1;
   document.getElementById('scoreDisplay').textContent = score;
@@ -855,16 +957,60 @@ function loadQuestion() {
     const btn = document.createElement('button');
     btn.className = 'option';
     btn.textContent = opt;
-    btn.onclick = () => selectAnswer(btn, opt === correctOption, q, correctOption);
+    btn.onclick = () => selectOption(btn, opt, correctOption);
     grid.appendChild(btn);
   });
 
   document.getElementById('feedback').className = 'feedback';
   document.getElementById('feedback').innerHTML = '';
+  document.getElementById('submitBtn').className = 'submit-btn';
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.className = 'next-btn';
   nextBtn.textContent = current === questions.length - 1 ? 'See Results →' : 'Next Question →';
   startTimer();
+}
+
+function selectOption(btn, opt, correctOption) {
+  if (answered) return;
+  // deselect previous
+  document.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedOption = { btn, opt, correctOption };
+  document.getElementById('submitBtn').className = 'submit-btn show';
+}
+
+function submitAnswer() {
+  if (!selectedOption || answered) return;
+  const { btn, opt, correctOption } = selectedOption;
+  answered = true;
+  clearInterval(timerInterval);
+  document.getElementById('submitBtn').className = 'submit-btn';
+
+  const q = questions[current];
+  document.querySelectorAll('.option').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === correctOption) b.classList.add('correct');
+  });
+
+  const fb = document.getElementById('feedback');
+  if (opt === correctOption) {
+    btn.classList.remove('selected');
+    btn.classList.add('correct');
+    score++; streak++;
+    fb.className = 'feedback correct-fb show';
+    fb.innerHTML = `<strong>✓ Correct!</strong> ${q.explanation}`;
+    soundCorrect();
+  } else {
+    btn.classList.remove('selected');
+    btn.classList.add('wrong');
+    streak = 0;
+    fb.className = 'feedback wrong-fb show';
+    fb.innerHTML = `<strong>✗ Not quite.</strong> ${q.explanation}`;
+    soundWrong();
+  }
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('streakDisplay').textContent = streak;
+  document.getElementById('nextBtn').className = 'next-btn show';
 }
 
 function startTimer() {
@@ -877,7 +1023,7 @@ function startTimer() {
     timeLeft--;
     const pct = (timeLeft / TIMER_SECONDS) * 100;
     bar.style.width = pct + '%';
-    if (pct < 30) bar.style.background = '#f87171';
+    if (pct < 30) { bar.style.background = '#f87171'; if (timeLeft <= 5) soundTick(); }
     else if (pct < 60) bar.style.background = '#fbbf24';
     if (timeLeft <= 0) { clearInterval(timerInterval); if (!answered) timeUp(); }
   }, 1000);
@@ -886,41 +1032,19 @@ function startTimer() {
 function timeUp() {
   answered = true;
   streak = 0;
+  selectedOption = null;
+  soundTimeUp();
+  document.getElementById('submitBtn').className = 'submit-btn';
   const q = questions[current];
   const correctOption = q.options[q.answer];
   document.querySelectorAll('.option').forEach(b => {
     b.disabled = true;
+    b.classList.remove('selected');
     if (b.textContent === correctOption) b.classList.add('correct');
   });
   const fb = document.getElementById('feedback');
   fb.className = 'feedback wrong-fb show';
   fb.innerHTML = `<strong>⏱ Time's up!</strong> ${q.explanation}`;
-  document.getElementById('nextBtn').className = 'next-btn show';
-}
-
-function selectAnswer(btn, isCorrect, q, correctOption) {
-  if (answered) return;
-  answered = true;
-  clearInterval(timerInterval);
-  document.querySelectorAll('.option').forEach(b => {
-    b.disabled = true;
-    if (b.textContent === correctOption) b.classList.add('correct');
-  });
-  const fb = document.getElementById('feedback');
-  if (isCorrect) {
-    btn.classList.add('correct');
-    score++;
-    streak++;
-    fb.className = 'feedback correct-fb show';
-    fb.innerHTML = `<strong>✓ Correct!</strong> ${q.explanation}`;
-  } else {
-    btn.classList.add('wrong');
-    streak = 0;
-    fb.className = 'feedback wrong-fb show';
-    fb.innerHTML = `<strong>✗ Not quite.</strong> ${q.explanation}`;
-  }
-  document.getElementById('scoreDisplay').textContent = score;
-  document.getElementById('streakDisplay').textContent = streak;
   document.getElementById('nextBtn').className = 'next-btn show';
 }
 
@@ -932,6 +1056,10 @@ function nextQuestion() {
 
 async function showResult() {
   clearInterval(timerInterval);
+  // Mark these questions as seen
+  const seenIndices = questions.map(q => ALL_QUESTIONS.indexOf(q));
+  markSeen(seenIndices);
+
   document.getElementById('quizScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'block';
   document.getElementById('finalScore').textContent = score;
@@ -953,7 +1081,6 @@ async function showResult() {
     }
   }
 
-  // Save score then load leaderboard
   const statusEl = document.getElementById('saveStatus');
   statusEl.textContent = 'Saving your score...';
   statusEl.className = 'save-status';
@@ -963,23 +1090,18 @@ async function showResult() {
   }
   statusEl.textContent = saved ? '✓ Score saved!' : '✗ Could not save score.';
   statusEl.className = saved ? 'save-status ok' : 'save-status err';
-
-  // Load leaderboard
   renderLeaderboard();
 }
 
 async function renderLeaderboard() {
   const el = document.getElementById('leaderboardList');
   if (typeof window._loadLeaderboard !== 'function') {
-    el.innerHTML = '<div class="lb-loading">Leaderboard unavailable.</div>';
-    return;
+    el.innerHTML = '<div class="lb-loading">Leaderboard unavailable.</div>'; return;
   }
   const records = await window._loadLeaderboard();
   if (!records || records.length === 0) {
-    el.innerHTML = '<div class="lb-loading">No scores yet. You\'re the first!</div>';
-    return;
+    el.innerHTML = '<div class="lb-loading">No scores yet. You\'re the first!</div>'; return;
   }
-
   const medals = ['🥇', '🥈', '🥉'];
   const rankClasses = ['gold', 'silver', 'bronze'];
   el.innerHTML = records.map((r, i) => {
