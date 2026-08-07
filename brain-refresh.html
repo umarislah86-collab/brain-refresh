@@ -425,9 +425,16 @@ window._saveScore = async function(username, score, total) {
 
 window._loadLeaderboard = async function() {
   try {
-    const q = query(collection(db, "scores"), orderBy("percentage", "desc"), orderBy("timestamp", "asc"), limit(10));
+    const q = query(collection(db, "scores"), orderBy("percentage", "desc"), limit(20));
     const snap = await getDocs(q);
-    return snap.docs.map(d => d.data());
+    const all = snap.docs.map(d => d.data());
+    // keep only the best score per username
+    const seen = new Map();
+    all.forEach(r => {
+      const key = (r.username || '').toLowerCase();
+      if (!seen.has(key) || r.percentage > seen.get(key).percentage) seen.set(key, r);
+    });
+    return [...seen.values()].sort((a,b) => b.percentage - a.percentage).slice(0, 10);
   } catch (e) {
     console.error("Leaderboard load failed:", e);
     return null;
