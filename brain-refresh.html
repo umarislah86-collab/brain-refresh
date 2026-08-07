@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Refresh</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0f0f1a;
+    color: #e0e0f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 700px;
+  }
+
+  /* ---- HEADER ---- */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .header h1 {
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: #a78bfa;
+  }
+  .header p {
+    color: #888;
+    margin-top: 6px;
+    font-size: 0.9rem;
+  }
+
+  /* ---- STATS BAR ---- */
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    background: #1a1a2e;
+    border-radius: 12px;
+    padding: 14px 24px;
+    margin-bottom: 24px;
+    font-size: 0.85rem;
+    color: #888;
+  }
+  .stats span strong {
+    color: #e0e0f0;
+    font-size: 1rem;
+  }
+
+  /* ---- TIMER ---- */
+  .timer-bar-wrap {
+    background: #1a1a2e;
+    border-radius: 8px;
+    height: 6px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    background: #a78bfa;
+    transition: width 1s linear, background 0.3s;
+    border-radius: 8px;
+  }
+
+  /* ---- CARD ---- */
+  .card {
+    background: #1a1a2e;
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+    border: 1px solid #2a2a45;
+  }
+
+  .category-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: #2a1a4e;
+    color: #a78bfa;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+
+  .question-text {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    color: #f0f0ff;
+  }
+
+  .question-num {
+    font-size: 0.8rem;
+    color: #555;
+    margin-bottom: 20px;
+  }
+
+  /* ---- OPTIONS ---- */
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .option {
+    background: #12122a;
+    border: 1.5px solid #2a2a45;
+    border-radius: 10px;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #ccc;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .option:hover:not(:disabled) {
+    border-color: #a78bfa;
+    color: #fff;
+    background: #1e1e3a;
+  }
+  .option.correct {
+    border-color: #34d399;
+    background: #0d2e22;
+    color: #34d399;
+  }
+  .option.wrong {
+    border-color: #f87171;
+    background: #2e0d0d;
+    color: #f87171;
+  }
+  .option:disabled { cursor: default; }
+
+  /* ---- FEEDBACK ---- */
+  .feedback {
+    margin-top: 20px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct-fb {
+    background: #0d2e22;
+    border: 1px solid #34d399;
+    color: #6ee7b7;
+  }
+  .feedback.wrong-fb {
+    background: #2e0d0d;
+    border: 1px solid #f87171;
+    color: #fca5a5;
+  }
+  .feedback strong { display: block; margin-bottom: 4px; }
+
+  /* ---- NEXT BUTTON ---- */
+  .next-btn {
+    display: none;
+    margin-top: 20px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: #a78bfa;
+    color: #0f0f1a;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+  }
+  .next-btn:hover { background: #c4b5fd; }
+  .next-btn.show { display: block; }
+
+  /* ---- RESULT SCREEN ---- */
+  .result {
+    text-align: center;
+    display: none;
+  }
+  .result.show { display: block; }
+  .result .big-score {
+    font-size: 5rem;
+    font-weight: 800;
+    color: #a78bfa;
+    line-height: 1;
+  }
+  .result .score-label {
+    font-size: 1rem;
+    color: #888;
+    margin-bottom: 24px;
+  }
+  .result .verdict {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #f0f0ff;
+  }
+  .result .verdict-sub {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+  }
+  .restart-btn {
+    padding: 14px 36px;
+    border-radius: 10px;
+    border: none;
+    background: #a78bfa;
+    color: #0f0f1a;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .restart-btn:hover { background: #c4b5fd; }
+
+  /* ---- INTRO SCREEN ---- */
+  .intro { text-align: center; }
+  .intro h2 { font-size: 1.8rem; color: #f0f0ff; margin-bottom: 12px; }
+  .intro .sub { color: #888; margin-bottom: 12px; line-height: 1.6; font-size: 0.9rem; }
+  .intro .sub2 { color: #555; margin-bottom: 32px; font-size: 0.8rem; }
+  .cat-preview { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 28px; }
+  .cat-preview-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #2a2a45;
+    background: #12122a;
+    color: #666;
+    font-size: 0.75rem;
+  }
+  .start-btn {
+    padding: 16px 48px;
+    border-radius: 10px;
+    border: none;
+    background: #a78bfa;
+    color: #0f0f1a;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+  }
+  .start-btn:hover { background: #c4b5fd; }
+
+  /* ---- USERNAME SCREEN ---- */
+  .username-screen { text-align: center; }
+  .username-screen h2 { font-size: 1.6rem; color: #f0f0ff; margin-bottom: 8px; }
+  .username-screen p { color: #888; margin-bottom: 28px; font-size: 0.9rem; }
+  .username-input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 1.5px solid #2a2a45;
+    background: #12122a;
+    color: #f0f0ff;
+    font-size: 1rem;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .username-input:focus { border-color: #a78bfa; }
+  .username-input::placeholder { color: #444; }
+  .proceed-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: #a78bfa;
+    color: #0f0f1a;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .proceed-btn:hover { background: #c4b5fd; }
+  .proceed-btn:disabled { background: #333; color: #666; cursor: default; }
+
+  /* ---- SAVING INDICATOR ---- */
+  .save-status {
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: #888;
+    min-height: 20px;
+  }
+  .save-status.ok { color: #34d399; }
+  .save-status.err { color: #f87171; }
+
+  /* ---- LEADERBOARD ---- */
+  .leaderboard { margin-top: 28px; text-align: left; }
+  .leaderboard h3 { font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; color: #555; margin-bottom: 14px; text-align: center; }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    background: #12122a;
+    border: 1px solid #1e1e3a;
+    transition: border-color 0.2s;
+  }
+  .lb-row.me { border-color: #a78bfa; background: #1a1030; }
+  .lb-rank { font-size: 0.8rem; color: #444; min-width: 22px; text-align: center; font-weight: 700; }
+  .lb-rank.gold   { color: #fbbf24; font-size: 1rem; }
+  .lb-rank.silver { color: #9ca3af; font-size: 1rem; }
+  .lb-rank.bronze { color: #b45309; font-size: 1rem; }
+  .lb-name { flex: 1; font-size: 0.9rem; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-name.me { color: #c4b5fd; font-weight: 700; }
+  .lb-score { font-size: 0.85rem; font-weight: 700; color: #a78bfa; }
+  .lb-loading { text-align: center; padding: 20px; color: #444; font-size: 0.85rem; }
+
+  @media (max-width: 480px) {
+    .options { grid-template-columns: 1fr; }
+    .card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>BRAIN REFRESH</h1>
+    <p>Sharpen your mind, one question at a time.</p>
+  </div>
+
+  <!-- USERNAME -->
+  <div class="card" id="usernameScreen">
+    <div class="username-screen">
+      <h2>Who's playing?</h2>
+      <p>Enter a username to track your score on the leaderboard.</p>
+      <input class="username-input" id="usernameInput" type="text" maxlength="30"
+        placeholder="Enter your username..."
+        oninput="checkUsername()"
+        onkeydown="if(event.key==='Enter') proceedToQuiz()">
+      <button class="proceed-btn" id="proceedBtn" onclick="proceedToQuiz()" disabled>Continue →</button>
+    </div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="card" id="introScreen" style="display:none">
+    <div class="intro">
+      <h2>Ready to think?</h2>
+      <p class="sub">You'll get one question from every category — a true test across the board.</p>
+      <p class="sub2">10 questions &bull; 30 seconds each &bull; instant explanations</p>
+      <div class="cat-preview" id="catPreview"></div>
+      <button class="start-btn" onclick="startQuiz()">Start Quiz</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quizScreen" style="display:none">
+    <div class="stats">
+      <span>Question <strong id="qNum">1</strong> / <strong id="qTotal">10</strong></span>
+      <span>Score <strong id="scoreDisplay">0</strong></span>
+      <span>Streak <strong id="streakDisplay">0</strong> 🔥</span>
+    </div>
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+    <div class="card">
+      <div class="category-tag" id="categoryTag">Logic</div>
+      <div class="question-text" id="questionText"></div>
+      <div class="question-num" id="questionNum"></div>
+      <div class="options" id="optionsGrid"></div>
+      <div class="feedback" id="feedback"></div>
+      <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next Question →</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card" id="resultScreen" style="display:none">
+    <div class="result show">
+      <div class="big-score" id="finalScore"></div>
+      <div class="score-label" id="scoreLabel">out of 10</div>
+      <div class="verdict" id="verdict"></div>
+      <div class="verdict-sub" id="verdictSub"></div>
+      <div class="save-status" id="saveStatus"></div>
+      <div class="leaderboard">
+        <h3>Top 10 Leaderboard</h3>
+        <div id="leaderboardList"><div class="lb-loading">Loading...</div></div>
+      </div>
+      <button class="restart-btn" style="margin-top:24px" onclick="restartQuiz()">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, orderBy, query, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC6TbStfWv2lE3qvQxf8WMsUJNlhVMpc_Q",
+  authDomain: "brain-refresh-db364.firebaseapp.com",
+  projectId: "brain-refresh-db364",
+  storageBucket: "brain-refresh-db364.firebasestorage.app",
+  messagingSenderId: "179174675906",
+  appId: "1:179174675906:web:0d3bfb01216a1e78e8b25b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window._saveScore = async function(username, score, total) {
+  try {
+    await addDoc(collection(db, "scores"), {
+      username,
+      score,
+      total,
+      percentage: Math.round((score / total) * 100),
+      timestamp: serverTimestamp()
+    });
+    return true;
+  } catch (e) {
+    console.error("Save failed:", e);
+    return false;
+  }
+};
+
+window._loadLeaderboard = async function() {
+  try {
+    const q = query(collection(db, "scores"), orderBy("percentage", "desc"), orderBy("timestamp", "asc"), limit(10));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data());
+  } catch (e) {
+    console.error("Leaderboard load failed:", e);
+    return null;
+  }
+};
+</script>
+
+<script>
+const ALL_QUESTIONS = [
+  // --- LOGIC ---
+  {
+    category: "Logic",
+    q: "A farmer has 17 sheep. All but 9 die. How many sheep does he have left?",
+    options: ["9", "8", "17", "0"],
+    answer: 0,
+    explanation: '"All but 9 die" means 9 survive. The phrasing is a classic misdirection.'
+  },
+  {
+    category: "Logic",
+    q: "If some Bloops are Razzies and all Razzies are Lazzies, then some Bloops are definitely Lazzies. True or False?",
+    options: ["True", "False", "Cannot be determined", "Only if Lazzies are Bloops"],
+    answer: 0,
+    explanation: "If some Bloops → Razzies, and all Razzies → Lazzies, then those Bloops that are Razzies are also Lazzies."
+  },
+  {
+    category: "Logic",
+    q: "You have a 3-litre jug and a 5-litre jug. How do you measure exactly 4 litres?",
+    options: ["Fill 5L, pour into 3L, empty 3L, pour remaining into 3L, fill 5L, top off 3L → 4L in 5L", "Fill 3L twice into 5L", "Fill both and combine", "It's impossible"],
+    answer: 0,
+    explanation: "Fill 5L → pour into 3L (5L now has 2L) → empty 3L → pour 2L into 3L → fill 5L again → top off 3L → 5L jug now holds exactly 4L."
+  },
+  {
+    category: "Logic",
+    q: "In a race, you overtake the person in 2nd place. What position are you now in?",
+    options: ["2nd", "1st", "3rd", "Depends on total runners"],
+    answer: 0,
+    explanation: "You take their spot — 2nd place. You didn't overtake 1st."
+  },
+  {
+    category: "Logic",
+    q: "Two fathers and two sons go fishing. They each catch one fish. Total fish caught: 3. How?",
+    options: ["Grandfather, father, and son — 3 people", "One fish was shared", "One person caught two", "A fish escaped"],
+    answer: 0,
+    explanation: "Three generations: grandfather (a father), his son (also a father), and his son. Two father-son pairs, three people."
+  },
+  // --- PATTERNS ---
+  {
+    category: "Pattern",
+    q: "What comes next in the sequence? 2, 6, 12, 20, 30, __",
+    options: ["42", "40", "44", "36"],
+    answer: 0,
+    explanation: "Differences: +4, +6, +8, +10, +12. The pattern is consecutive even increments. 30 + 12 = 42."
+  },
+  {
+    category: "Pattern",
+    q: "What letter comes next? A, Z, B, Y, C, X, D, __",
+    options: ["W", "V", "E", "Y"],
+    answer: 0,
+    explanation: "Two alternating sequences: A B C D... from the start, and Z Y X W... from the end. Next is W."
+  },
+  {
+    category: "Pattern",
+    q: "1, 1, 2, 3, 5, 8, 13, __",
+    options: ["21", "18", "20", "24"],
+    answer: 0,
+    explanation: "Fibonacci sequence: each number = sum of the previous two. 8 + 13 = 21."
+  },
+  {
+    category: "Pattern",
+    q: "Which number doesn't belong? 3, 5, 11, 14, 23, 41",
+    options: ["14", "3", "41", "23"],
+    answer: 0,
+    explanation: "All others are prime (3, 5, 11, 23, 41). 14 = 2 × 7, so it's the odd one out."
+  },
+  {
+    category: "Pattern",
+    q: "Complete the analogy — Book : Library :: Painting : ?",
+    options: ["Gallery", "Museum", "Artist", "Canvas"],
+    answer: 0,
+    explanation: "A book is stored/displayed in a library; a painting is stored/displayed in a gallery."
+  },
+  // --- MATH ---
+  {
+    category: "Math",
+    q: "A bat and a ball cost $1.10 together. The bat costs $1.00 more than the ball. How much does the ball cost?",
+    options: ["$0.05", "$0.10", "$0.15", "$0.50"],
+    answer: 0,
+    explanation: "Intuition says $0.10, but that makes the bat $1.10 and total $1.20. Ball = x, bat = x + 1.00. x + x + 1 = 1.10 → x = $0.05."
+  },
+  {
+    category: "Math",
+    q: "If you have 6 apples and you take away 4, how many apples do YOU have?",
+    options: ["4", "2", "6", "0"],
+    answer: 0,
+    explanation: "You took 4, so you have 4. The question asks what YOU have, not what's left."
+  },
+  {
+    category: "Math",
+    q: "What is 25% of 200?",
+    options: ["50", "25", "75", "100"],
+    answer: 0,
+    explanation: "25% = 1/4. 200 ÷ 4 = 50."
+  },
+  {
+    category: "Math",
+    q: "How many months have 28 days?",
+    options: ["12", "1", "6", "4"],
+    answer: 0,
+    explanation: "All 12 months have at least 28 days. The trick is not to say just February."
+  },
+  {
+    category: "Math",
+    q: "A snail is at the bottom of a 10m well. Each day it climbs 3m. Each night it slides back 2m. How many days to escape?",
+    options: ["8", "10", "7", "9"],
+    answer: 0,
+    explanation: "Net progress: 1m/day. After 7 days it's at 7m. On day 8 it climbs to 10m and escapes — no sliding back."
+  },
+  // --- VERBAL ---
+  {
+    category: "Verbal",
+    q: "Which word is the odd one out? Swift, Rapid, Sluggish, Brisk",
+    options: ["Sluggish", "Swift", "Rapid", "Brisk"],
+    answer: 0,
+    explanation: "Swift, Rapid, and Brisk all mean fast. Sluggish means slow — opposite meaning."
+  },
+  {
+    category: "Verbal",
+    q: "Complete: 'WATER' is to 'THIRST' as 'FOOD' is to ___",
+    options: ["Hunger", "Eat", "Taste", "Cook"],
+    answer: 0,
+    explanation: "Water satisfies thirst; food satisfies hunger. Same need-relief relationship."
+  },
+  {
+    category: "Verbal",
+    q: "Which word has the closest meaning to 'EPHEMERAL'?",
+    options: ["Transient", "Eternal", "Vibrant", "Ancient"],
+    answer: 0,
+    explanation: "Ephemeral means lasting for a very short time. Transient = passing, temporary — closest match."
+  },
+  // --- SPATIAL ---
+  {
+    category: "Spatial",
+    q: "I am a 3D shape with 6 faces, 12 edges, and 8 corners. All faces are identical. What am I?",
+    options: ["Cube", "Pyramid", "Sphere", "Cuboid"],
+    answer: 0,
+    explanation: "A cube has 6 square faces (all identical), 12 edges, and 8 vertices."
+  },
+  {
+    category: "Spatial",
+    q: "You fold a square piece of paper in half twice, then cut one corner. How many holes are there when you unfold it?",
+    options: ["4", "1", "2", "3"],
+    answer: 0,
+    explanation: "Each fold doubles the layers. Two folds = 4 layers. Cutting one corner through all layers creates 4 symmetrical holes when unfolded."
+  },
+  {
+    category: "Spatial",
+    q: "If you look at a clock in a mirror at 3:00, what time does the mirror show?",
+    options: ["9:00", "3:00", "6:00", "12:00"],
+    answer: 0,
+    explanation: "Mirror reflection flips left-right. A 3:00 clock face reflected appears as 9:00."
+  },
+  // --- CLASSIC IQ ---
+  {
+    category: "Classic IQ",
+    q: "What can travel around the world while staying in a corner?",
+    options: ["A stamp", "A shadow", "The sun", "A clock"],
+    answer: 0,
+    explanation: "A postage stamp sits in the corner of an envelope that travels worldwide."
+  },
+  {
+    category: "Classic IQ",
+    q: "The more you take, the more you leave behind. What am I?",
+    options: ["Footsteps", "Memories", "Time", "Air"],
+    answer: 0,
+    explanation: "Every step you take leaves a footprint behind."
+  },
+  {
+    category: "Classic IQ",
+    q: "I have cities, but no houses live there. I have mountains, but no trees grow there. I have water, but no fish swim there. What am I?",
+    options: ["A map", "A dream", "A painting", "A book"],
+    answer: 0,
+    explanation: "A map has representations of all these things, but none are real."
+  },
+
+  // --- GENERAL KNOWLEDGE ---
+  { category: "General Knowledge", q: "What is the capital of Australia?", options: ["Canberra", "Sydney", "Melbourne", "Perth"], answer: 0, explanation: "Canberra has been Australia's capital since 1913, chosen as a compromise between Sydney and Melbourne." },
+  { category: "General Knowledge", q: "How many bones are in the adult human body?", options: ["206", "212", "198", "230"], answer: 0, explanation: "Adults have 206 bones. Babies are born with around 270, which fuse over time." },
+  { category: "General Knowledge", q: "What element has the chemical symbol 'Au'?", options: ["Gold", "Silver", "Aluminum", "Argon"], answer: 0, explanation: "Au comes from the Latin word 'Aurum', meaning gold." },
+  { category: "General Knowledge", q: "Which planet is closest in size to Earth?", options: ["Venus", "Mars", "Mercury", "Neptune"], answer: 0, explanation: "Venus has a diameter of ~12,104 km vs Earth's ~12,742 km — the closest match." },
+  { category: "General Knowledge", q: "Who painted the Mona Lisa?", options: ["Leonardo da Vinci", "Michelangelo", "Raphael", "Caravaggio"], answer: 0, explanation: "Leonardo da Vinci painted the Mona Lisa around 1503–1519." },
+  { category: "General Knowledge", q: "What is the largest ocean on Earth?", options: ["Pacific Ocean", "Atlantic Ocean", "Indian Ocean", "Arctic Ocean"], answer: 0, explanation: "The Pacific Ocean covers more area than all landmasses combined." },
+  { category: "General Knowledge", q: "In which year did World War II end?", options: ["1945", "1944", "1946", "1943"], answer: 0, explanation: "WWII ended in 1945: Germany surrendered in May, Japan in September." },
+  { category: "General Knowledge", q: "What is the hardest natural substance on Earth?", options: ["Diamond", "Quartz", "Sapphire", "Tungsten"], answer: 0, explanation: "Diamond scores 10 on the Mohs hardness scale — the maximum." },
+  { category: "General Knowledge", q: "How many sides does a hexagon have?", options: ["6", "5", "7", "8"], answer: 0, explanation: "Hex- is a Greek prefix meaning six." },
+  { category: "General Knowledge", q: "What is the fastest land animal?", options: ["Cheetah", "Lion", "Pronghorn", "Greyhound"], answer: 0, explanation: "Cheetahs can reach speeds up to 120 km/h over short distances." },
+  { category: "General Knowledge", q: "Which country has the largest population?", options: ["India", "China", "USA", "Indonesia"], answer: 0, explanation: "India surpassed China in 2023 to become the world's most populous country." },
+  { category: "General Knowledge", q: "What gas do plants absorb during photosynthesis?", options: ["Carbon dioxide", "Oxygen", "Nitrogen", "Hydrogen"], answer: 0, explanation: "Plants absorb CO2 and use sunlight to convert it into glucose and oxygen." },
+  { category: "General Knowledge", q: "Who wrote 'Romeo and Juliet'?", options: ["William Shakespeare", "Charles Dickens", "John Keats", "Geoffrey Chaucer"], answer: 0, explanation: "Romeo and Juliet was written by Shakespeare around 1594–1596." },
+  { category: "General Knowledge", q: "What is the currency of Japan?", options: ["Yen", "Yuan", "Won", "Ringgit"], answer: 0, explanation: "Japan's currency is the Japanese Yen (JPY)." },
+  { category: "General Knowledge", q: "How many continents are there on Earth?", options: ["7", "6", "5", "8"], answer: 0, explanation: "The 7 continents are Africa, Antarctica, Asia, Australia, Europe, North America, South America." },
+  { category: "General Knowledge", q: "What is the chemical formula for water?", options: ["H2O", "HO2", "H2O2", "OH"], answer: 0, explanation: "Water consists of 2 hydrogen atoms and 1 oxygen atom: H2O." },
+  { category: "General Knowledge", q: "Which country invented paper?", options: ["China", "Egypt", "India", "Mesopotamia"], answer: 0, explanation: "Paper was invented in China around 105 AD by Cai Lun during the Han Dynasty." },
+  { category: "General Knowledge", q: "What is the tallest mountain in the world?", options: ["Mount Everest", "K2", "Kangchenjunga", "Makalu"], answer: 0, explanation: "Mount Everest stands at 8,849 m — the highest point on Earth." },
+  { category: "General Knowledge", q: "How many strings does a standard guitar have?", options: ["6", "4", "5", "7"], answer: 0, explanation: "A standard acoustic or electric guitar has 6 strings." },
+  { category: "General Knowledge", q: "What year did man first land on the Moon?", options: ["1969", "1967", "1971", "1965"], answer: 0, explanation: "Neil Armstrong and Buzz Aldrin landed on the Moon on July 20, 1969 (Apollo 11)." },
+  { category: "General Knowledge", q: "Which organ pumps blood through the human body?", options: ["Heart", "Liver", "Kidney", "Lungs"], answer: 0, explanation: "The heart is a muscular organ that pumps blood through the circulatory system." },
+  { category: "General Knowledge", q: "What is the longest river in the world?", options: ["Nile", "Amazon", "Yangtze", "Mississippi"], answer: 0, explanation: "The Nile River in Africa stretches approximately 6,650 km." },
+  { category: "General Knowledge", q: "Which planet is known as the Red Planet?", options: ["Mars", "Jupiter", "Saturn", "Venus"], answer: 0, explanation: "Mars appears red due to iron oxide (rust) on its surface." },
+  { category: "General Knowledge", q: "Who was the first person to travel to space?", options: ["Yuri Gagarin", "Neil Armstrong", "Alan Shepard", "John Glenn"], answer: 0, explanation: "Yuri Gagarin of the Soviet Union orbited Earth on April 12, 1961." },
+  { category: "General Knowledge", q: "What is the smallest country in the world by area?", options: ["Vatican City", "Monaco", "Nauru", "San Marino"], answer: 0, explanation: "Vatican City covers just 0.44 km2 within Rome, Italy." },
+  { category: "General Knowledge", q: "Which vitamin is produced when skin is exposed to sunlight?", options: ["Vitamin D", "Vitamin C", "Vitamin A", "Vitamin B12"], answer: 0, explanation: "UVB rays trigger the synthesis of Vitamin D3 in the skin." },
+  { category: "General Knowledge", q: "What is the powerhouse of the cell?", options: ["Mitochondria", "Nucleus", "Ribosome", "Vacuole"], answer: 0, explanation: "Mitochondria produce ATP — the cell's energy currency — through cellular respiration." },
+  { category: "General Knowledge", q: "What language has the most native speakers?", options: ["Mandarin Chinese", "Spanish", "English", "Hindi"], answer: 0, explanation: "Mandarin has over 900 million native speakers, far more than any other language." },
+  { category: "General Knowledge", q: "Who developed the theory of general relativity?", options: ["Albert Einstein", "Isaac Newton", "Niels Bohr", "Stephen Hawking"], answer: 0, explanation: "Einstein published the theory of general relativity in 1915." },
+  { category: "General Knowledge", q: "What is the national sport of Japan?", options: ["Sumo", "Judo", "Baseball", "Karate"], answer: 0, explanation: "Sumo wrestling is considered Japan's national sport and has deep cultural and historical roots." },
+
+  // --- AQEEDAH ---
+  { category: "Aqeedah", q: "How many pillars of Iman (faith) are there in Islam?", options: ["6", "5", "7", "4"], answer: 0, explanation: "The 6 pillars of Iman: belief in Allah, His angels, His books, His messengers, the Last Day, and divine decree (Qadar)." },
+  { category: "Aqeedah", q: "What does 'Tawhid' mean?", options: ["The oneness of Allah", "Prayer", "Prophethood", "Predestination"], answer: 0, explanation: "Tawhid is the Islamic concept of the absolute oneness and uniqueness of Allah." },
+  { category: "Aqeedah", q: "How many angels are specifically named in the Quran?", options: ["2", "4", "7", "3"], answer: 0, explanation: "Only Jibreel (Gabriel) and Mikaeel (Michael) are named by name in the Quran." },
+  { category: "Aqeedah", q: "What is the Arabic term for the belief in predestination?", options: ["Qadar", "Tawakkul", "Sabr", "Zuhd"], answer: 0, explanation: "Qadar refers to divine decree — the belief that Allah has knowledge of and willed all things." },
+  { category: "Aqeedah", q: "Which of these is NOT one of the 99 names of Allah?", options: ["Al-Mughni (The Enricher)", "Al-Basir (The All-Seeing)", "Al-Sami (The All-Hearing)", "Al-Qadir (The All-Powerful)"], answer: 0, explanation: "Al-Mughni IS one of Allah's names. All four listed are actually valid names — trick question on familiarity." },
+  { category: "Aqeedah", q: "What does 'Shirk' mean in Islamic theology?", options: ["Associating partners with Allah", "Hypocrisy", "Disbelief", "Innovation in religion"], answer: 0, explanation: "Shirk is the sin of associating partners with Allah, considered the gravest sin in Islam." },
+  { category: "Aqeedah", q: "What is the term for the Islamic concept of relying upon Allah?", options: ["Tawakkul", "Sabr", "Shukr", "Taqwa"], answer: 0, explanation: "Tawakkul means complete reliance and trust in Allah while taking the necessary means." },
+  { category: "Aqeedah", q: "In Islamic belief, what are the Kutub (Books)?", options: ["Divine scriptures revealed to prophets", "Books of Hadith", "Books of Fiqh", "Scholarly commentaries"], answer: 0, explanation: "Belief in Allah's revealed books — including Tawrah, Zabur, Injeel, and Quran — is a pillar of Iman." },
+  { category: "Aqeedah", q: "What is 'Nifaq' in Islamic terminology?", options: ["Hypocrisy", "Polytheism", "Apostasy", "Arrogance"], answer: 0, explanation: "Nifaq refers to hypocrisy — outwardly showing Islam while internally disbelieving." },
+  { category: "Aqeedah", q: "How many prophets are mentioned by name in the Quran?", options: ["25", "30", "20", "124,000"], answer: 0, explanation: "25 prophets are mentioned by name in the Quran, though there were many more not named." },
+  { category: "Aqeedah", q: "What does 'Aakhirah' refer to?", options: ["The Hereafter / Afterlife", "Paradise only", "The Day of Judgment only", "The grave"], answer: 0, explanation: "Aakhirah encompasses everything after death: the grave, resurrection, judgment, and eternal life." },
+  { category: "Aqeedah", q: "What is the meaning of 'Taqwa'?", options: ["God-consciousness and piety", "Prayer", "Fasting", "Charity"], answer: 0, explanation: "Taqwa is often translated as fear of Allah, mindfulness, or piety — guarding oneself from sin." },
+  { category: "Aqeedah", q: "Who is the angel responsible for delivering revelation?", options: ["Jibreel (Gabriel)", "Mikaeel (Michael)", "Israfeel", "Azraeel"], answer: 0, explanation: "Jibreel (AS) is the angel of revelation who brought the Quran to the Prophet (PBUH)." },
+  { category: "Aqeedah", q: "What is the Islamic term for the barrier between this life and the Hereafter?", options: ["Barzakh", "Sirat", "Mizan", "Jannah"], answer: 0, explanation: "Barzakh is the intermediate state between death and resurrection." },
+  { category: "Aqeedah", q: "What does 'Risalah' refer to in Islamic belief?", options: ["Prophethood / Messengership", "Divine Books", "Angels", "Day of Judgment"], answer: 0, explanation: "Risalah is the concept of prophethood — Allah sending messengers to guide mankind." },
+
+  // --- SIRAH ---
+  { category: "Sirah", q: "In which city was Prophet Muhammad (PBUH) born?", options: ["Makkah", "Madinah", "Ta'if", "Jerusalem"], answer: 0, explanation: "The Prophet (PBUH) was born in Makkah, in the Year of the Elephant (approximately 570 CE)." },
+  { category: "Sirah", q: "What was the name of the Prophet's (PBUH) mother?", options: ["Aminah bint Wahb", "Khadijah bint Khuwaylid", "Fatimah bint Asad", "Halimah al-Sa'diyah"], answer: 0, explanation: "His mother was Aminah bint Wahb, who passed away when he was about 6 years old." },
+  { category: "Sirah", q: "Who was the Prophet's (PBUH) first wife?", options: ["Khadijah (RA)", "Aisha (RA)", "Sawdah (RA)", "Hafsah (RA)"], answer: 0, explanation: "Khadijah bint Khuwaylid (RA) was the first wife of the Prophet, and the first person to accept Islam." },
+  { category: "Sirah", q: "How old was the Prophet (PBUH) when he received the first revelation?", options: ["40", "35", "25", "43"], answer: 0, explanation: "The first revelation came to the Prophet (PBUH) at age 40, in the Cave of Hira during Ramadan." },
+  { category: "Sirah", q: "What is the name of the cave where the Prophet (PBUH) received the first revelation?", options: ["Cave of Hira", "Cave of Thawr", "Cave of Uhud", "Cave of Abu Qubays"], answer: 0, explanation: "The first revelation was revealed in the Cave of Hira on Jabal al-Nour (Mountain of Light)." },
+  { category: "Sirah", q: "What was the name of the Prophet's (PBUH) grandfather who raised him?", options: ["Abd al-Muttalib", "Abu Talib", "Abdullah", "Hashim"], answer: 0, explanation: "After the death of his mother (age 6), Abd al-Muttalib raised him until his own death, when the Prophet was 8." },
+  { category: "Sirah", q: "What was the first battle in Islam?", options: ["Battle of Badr", "Battle of Uhud", "Battle of Khandaq", "Battle of Tabuk"], answer: 0, explanation: "The Battle of Badr (2 AH / 624 CE) was the first major battle in Islam, a decisive victory for the Muslims." },
+  { category: "Sirah", q: "In which year did the Prophet (PBUH) migrate to Madinah (Hijrah)?", options: ["622 CE", "610 CE", "630 CE", "615 CE"], answer: 0, explanation: "The Hijrah took place in 622 CE, and marks the beginning of the Islamic calendar." },
+  { category: "Sirah", q: "Who was the closest companion and father-in-law of the Prophet (PBUH), known as 'Al-Siddiq'?", options: ["Abu Bakr (RA)", "Umar ibn al-Khattab (RA)", "Uthman ibn Affan (RA)", "Ali ibn Abi Talib (RA)"], answer: 0, explanation: "Abu Bakr (RA) was given the title Al-Siddiq (The Truthful) and was the Prophet's closest companion." },
+  { category: "Sirah", q: "What was the name of the Prophet's (PBUH) foster mother who nursed him?", options: ["Halimah al-Sa'diyah", "Aminah bint Wahb", "Suwaybah", "Umm Ayman"], answer: 0, explanation: "Halimah al-Sa'diyah from the Banu Sa'd tribe was his wet nurse. He stayed with her for several years." },
+  { category: "Sirah", q: "Which companion was known as 'Sayf Allah' (Sword of Allah)?", options: ["Khalid ibn al-Walid (RA)", "Ali ibn Abi Talib (RA)", "Zubayr ibn al-Awwam (RA)", "Hamzah (RA)"], answer: 0, explanation: "Khalid ibn al-Walid (RA) was given the title Sayf Allah (Sword of Allah) by the Prophet (PBUH)." },
+  { category: "Sirah", q: "In which city did the Prophet (PBUH) pass away?", options: ["Madinah", "Makkah", "Ta'if", "Jerusalem"], answer: 0, explanation: "The Prophet (PBUH) passed away in Madinah on 12 Rabi al-Awwal, 11 AH (632 CE)." },
+  { category: "Sirah", q: "What was the name of the treaty signed between the Muslims and the Quraysh in 6 AH?", options: ["Treaty of Hudaybiyyah", "Treaty of Madinah", "Treaty of Aqabah", "Treaty of Badr"], answer: 0, explanation: "The Treaty of Hudaybiyyah (6 AH) was a peace agreement that later led to the spread of Islam." },
+  { category: "Sirah", q: "Who was the Prophet's (PBUH) uncle who was a fierce protector but never embraced Islam?", options: ["Abu Talib", "Abu Lahab", "Hamzah (RA)", "Abbas (RA)"], answer: 0, explanation: "Abu Talib raised and protected the Prophet but died without accepting Islam, which grieved the Prophet deeply." },
+  { category: "Sirah", q: "How many years did the Prophet (PBUH) live?", options: ["63", "60", "65", "70"], answer: 0, explanation: "The Prophet (PBUH) lived for 63 years — 40 before prophethood and 23 as a prophet." },
+  { category: "Sirah", q: "What was the name of the Night Journey of the Prophet (PBUH)?", options: ["Isra wal Mi'raj", "Hijrah", "Laylat al-Qadr", "Mab'ath"], answer: 0, explanation: "Isra wal Mi'raj was the miraculous night journey from Makkah to Jerusalem and ascension to the heavens." },
+  { category: "Sirah", q: "What was the nickname of the Prophet (PBUH) among his people before prophethood?", options: ["Al-Amin (The Trustworthy)", "Al-Siddiq", "Al-Faruq", "Dhul Nurayn"], answer: 0, explanation: "The Quraysh called him Al-Amin (The Trustworthy) due to his honesty and reliability before revelation." },
+  { category: "Sirah", q: "Which companion was the first martyr in Islam?", options: ["Sumayyah bint Khayyat (RA)", "Yasir (RA)", "Bilal (RA)", "Ammar (RA)"], answer: 0, explanation: "Sumayyah bint Khayyat (RA) was the first martyr in Islam, killed by Abu Jahl for refusing to renounce her faith." },
+  { category: "Sirah", q: "Who gave the Adhan (call to prayer) for the first time in Islam?", options: ["Bilal ibn Rabah (RA)", "Abu Bakr (RA)", "Abdullah ibn Zayd (RA)", "Umar (RA)"], answer: 0, explanation: "Bilal ibn Rabah (RA) was chosen by the Prophet to be the first muadhdhin (caller to prayer)." },
+  { category: "Sirah", q: "In which year did the Conquest of Makkah occur?", options: ["8 AH (630 CE)", "6 AH (628 CE)", "10 AH (632 CE)", "2 AH (624 CE)"], answer: 0, explanation: "The Conquest of Makkah occurred in Ramadan 8 AH (630 CE), when the Prophet (PBUH) entered peacefully." },
+
+  // --- FIQH ---
+  { category: "Fiqh", q: "How many times a day must a Muslim perform Salah (prayer)?", options: ["5", "3", "7", "4"], answer: 0, explanation: "The five daily prayers are: Fajr, Dhuhr, Asr, Maghrib, and Isha." },
+  { category: "Fiqh", q: "What is the minimum amount of wealth that makes Zakat obligatory (Nisab for gold)?", options: ["85 grams of gold", "100 grams of gold", "50 grams of gold", "200 grams of gold"], answer: 0, explanation: "The Nisab for gold is 85 grams (equivalent to 20 mithqal). If held for one lunar year, 2.5% zakat is due." },
+  { category: "Fiqh", q: "Which pillar of Islam involves fasting in the month of Ramadan?", options: ["Sawm", "Salah", "Zakat", "Hajj"], answer: 0, explanation: "Sawm (fasting) is the fourth pillar of Islam, obligatory during the entire month of Ramadan." },
+  { category: "Fiqh", q: "What invalidates Wudu (ablution)?", options: ["Passing wind", "Eating food", "Drinking water", "Sneezing"], answer: 0, explanation: "Passing wind is one of the nullifiers of Wudu along with using the bathroom, deep sleep, etc." },
+  { category: "Fiqh", q: "How many Rak'ahs are in the Fajr (dawn) prayer?", options: ["2", "3", "4", "2 fard + 2 sunnah only"], answer: 0, explanation: "Fajr consists of 2 obligatory (fard) rak'ahs, preceded by 2 sunnah rak'ahs." },
+  { category: "Fiqh", q: "What is the term for the ritual purification bath required after major impurity?", options: ["Ghusl", "Wudu", "Tayammum", "Istinja"], answer: 0, explanation: "Ghusl is the full-body ritual bath required after major states of impurity such as after intimacy or menses." },
+  { category: "Fiqh", q: "Which direction do Muslims face during Salah?", options: ["Qiblah (toward the Kaabah in Makkah)", "East", "West", "Toward Jerusalem"], answer: 0, explanation: "Muslims face the Qiblah — the direction of the Masjid al-Haram and the Kaabah in Makkah." },
+  { category: "Fiqh", q: "What is Tayammum?", options: ["Dry ablution using clean earth/soil when water is unavailable", "A type of prayer", "Charity given at Eid", "The call to prayer"], answer: 0, explanation: "Tayammum is the dry purification using clean earth or dust, permitted when water is unavailable or harmful to use." },
+  { category: "Fiqh", q: "What percentage of savings must be given as Zakat?", options: ["2.5%", "5%", "10%", "1%"], answer: 0, explanation: "Zakat on wealth (money/gold/silver) is 2.5% of savings held above the Nisab for one lunar year." },
+  { category: "Fiqh", q: "How many times is Hajj obligatory for a Muslim?", options: ["Once in a lifetime", "Every 5 years", "Once per decade", "Every year if able"], answer: 0, explanation: "Hajj is obligatory once in a lifetime for every Muslim who is physically and financially able." },
+  { category: "Fiqh", q: "What is the ruling on eating pork in Islam?", options: ["Haram (forbidden)", "Makruh (disliked)", "Mubah (permitted)", "Halal in necessity"], answer: 0, explanation: "Pork is explicitly prohibited (Haram) in the Quran in multiple verses." },
+  { category: "Fiqh", q: "What is Sadaqah al-Fitr (Fitrana)?", options: ["Obligatory charity given before Eid al-Fitr prayer", "Voluntary charity", "Zakat on gold", "Tax paid to the Islamic state"], answer: 0, explanation: "Sadaqah al-Fitr is a small obligatory charity given before the Eid al-Fitr prayer to purify the fast." },
+  { category: "Fiqh", q: "What is the term for the Islamic will and testament?", options: ["Wasiyyah", "Mahr", "Walimah", "Nikah"], answer: 0, explanation: "Wasiyyah is the Islamic will through which a person may bequeath up to one-third of their estate." },
+  { category: "Fiqh", q: "What is 'Halal' meat?", options: ["Meat slaughtered in accordance with Islamic law", "Any meat that is not pork", "Meat blessed by an imam", "Vegetarian food"], answer: 0, explanation: "Halal meat requires the animal to be slaughtered by a Muslim while invoking Allah's name, with a swift cut." },
+  { category: "Fiqh", q: "How many Rak'ahs are in the Isha (night) prayer's obligatory portion?", options: ["4", "3", "2", "5"], answer: 0, explanation: "Isha has 4 obligatory (fard) rak'ahs." },
+  { category: "Fiqh", q: "What is the Mahr in Islamic marriage?", options: ["Mandatory gift from groom to bride", "Marriage fee paid to the mosque", "Dowry from bride's family", "Contract signing fee"], answer: 0, explanation: "Mahr is a mandatory marital gift given by the groom directly to the bride — it is her right, not her family's." },
+  { category: "Fiqh", q: "Which prayer has 3 obligatory Rak'ahs?", options: ["Maghrib", "Fajr", "Asr", "Dhuhr"], answer: 0, explanation: "Maghrib (sunset prayer) is unique in having 3 obligatory rak'ahs." },
+  { category: "Fiqh", q: "What is forbidden during the state of Ihram for Hajj or Umrah?", options: ["Cutting hair or nails, hunting, intimacy", "Fasting", "Reciting Quran", "Making dua"], answer: 0, explanation: "In Ihram, cutting hair/nails, hunting, wearing stitched clothing (for men), and intimacy are prohibited." },
+  { category: "Fiqh", q: "What is the ruling on consuming alcohol in Islam?", options: ["Haram (strictly forbidden)", "Makruh (disliked)", "Permitted in small amounts", "Only forbidden in excess"], answer: 0, explanation: "Alcohol is strictly Haram in Islam. Even small amounts are forbidden, as stated in the Quran." },
+  { category: "Fiqh", q: "What is Waqf in Islamic law?", options: ["Endowment of property for charitable or religious purposes", "Islamic inheritance law", "Marriage contract", "Voluntary prayer"], answer: 0, explanation: "Waqf is an inalienable charitable endowment — property dedicated perpetually for religious or charitable use." },
+
+  // --- QURAN & HADITH ---
+  { category: "Quran & Hadith", q: "How many chapters (Surahs) are in the Quran?", options: ["114", "112", "116", "120"], answer: 0, explanation: "The Quran contains exactly 114 Surahs (chapters), from Al-Fatihah to Al-Nas." },
+  { category: "Quran & Hadith", q: "What is the first Surah of the Quran?", options: ["Al-Fatihah", "Al-Baqarah", "Al-Ikhlas", "Al-Alaq"], answer: 0, explanation: "Al-Fatihah (The Opening) is the first Surah and is recited in every rak'ah of prayer." },
+  { category: "Quran & Hadith", q: "What is the longest Surah in the Quran?", options: ["Al-Baqarah", "Al-Imran", "An-Nisa", "Al-Maidah"], answer: 0, explanation: "Al-Baqarah is the longest Surah with 286 verses." },
+  { category: "Quran & Hadith", q: "Which Surah is known as the 'Heart of the Quran'?", options: ["Ya-Sin", "Al-Fatihah", "Al-Ikhlas", "Al-Kahf"], answer: 0, explanation: "Surah Ya-Sin is often called the heart of the Quran due to a well-known hadith." },
+  { category: "Quran & Hadith", q: "What is the shortest Surah in the Quran?", options: ["Al-Kawthar", "Al-Asr", "Al-Ikhlas", "An-Nas"], answer: 0, explanation: "Al-Kawthar (Surah 108) has only 3 verses — the shortest Surah in the Quran." },
+  { category: "Quran & Hadith", q: "In which Surah is the Verse of the Throne (Ayat al-Kursi) found?", options: ["Al-Baqarah", "Al-Imran", "Al-Fatihah", "Al-Ikhlas"], answer: 0, explanation: "Ayat al-Kursi is verse 255 of Surah Al-Baqarah, considered the greatest verse in the Quran." },
+  { category: "Quran & Hadith", q: "How many times is the word 'Quran' mentioned in the Quran?", options: ["70", "114", "57", "99"], answer: 0, explanation: "The word 'Quran' appears approximately 70 times in the Quran itself." },
+  { category: "Quran & Hadith", q: "Which collection of Hadith is considered the most authentic alongside Bukhari?", options: ["Sahih Muslim", "Sunan Abu Dawood", "Jami al-Tirmidhi", "Sunan Ibn Majah"], answer: 0, explanation: "Sahih Bukhari and Sahih Muslim together are known as the 'Two Sahihs' (Al-Sahihayn) — the most authentic." },
+  { category: "Quran & Hadith", q: "What does 'Hadith Qudsi' refer to?", options: ["Words of Allah conveyed by the Prophet in his own words", "A fabricated hadith", "Hadith graded as authentic", "Verses of the Quran"], answer: 0, explanation: "Hadith Qudsi are divine sayings where the meaning is from Allah but the wording is the Prophet's own." },
+  { category: "Quran & Hadith", q: "Which Surah does not begin with Bismillah?", options: ["At-Tawbah (Surah 9)", "Al-Fatihah", "Al-Baqarah", "Al-Anfal"], answer: 0, explanation: "Surah At-Tawbah is the only Surah that does not begin with Bismillah." },
+  { category: "Quran & Hadith", q: "In how many years was the Quran fully revealed?", options: ["23 years", "20 years", "10 years", "40 years"], answer: 0, explanation: "The Quran was revealed over 23 years — the first 13 years in Makkah and 10 years in Madinah." },
+  { category: "Quran & Hadith", q: "What was the first word revealed in the Quran?", options: ["Iqra (Read/Recite)", "Bismillah", "Alhamdulillah", "Qul"], answer: 0, explanation: "The first word revealed was 'Iqra' (Read/Recite) — the first verse of Surah Al-Alaq." },
+  { category: "Quran & Hadith", q: "Who compiled the Quran into a single mushaf (book) after the Prophet's death?", options: ["Abu Bakr (RA)", "Umar (RA)", "Uthman (RA)", "Ali (RA)"], answer: 0, explanation: "Abu Bakr (RA), on Umar's advice, commissioned Zaid ibn Thabit (RA) to compile the Quran into one book." },
+  { category: "Quran & Hadith", q: "Which Surah is recommended to be recited every Friday?", options: ["Al-Kahf", "Ya-Sin", "Al-Mulk", "Al-Waqiah"], answer: 0, explanation: "It is Sunnah to recite Surah Al-Kahf on Fridays; the Prophet said it provides light between two Fridays." },
+  { category: "Quran & Hadith", q: "What is the term for the science of Hadith authentication?", options: ["Ilm al-Hadith / Mustalah al-Hadith", "Usul al-Fiqh", "Ilm al-Tafsir", "Ilm al-Rijal only"], answer: 0, explanation: "Mustalah al-Hadith (Hadith science/terminology) is the discipline for authenticating and classifying hadiths." },
+
+  // --- ISLAMIC HISTORY ---
+  { category: "Islamic History", q: "Who was the first Caliph after the Prophet (PBUH)?", options: ["Abu Bakr al-Siddiq (RA)", "Umar ibn al-Khattab (RA)", "Uthman ibn Affan (RA)", "Ali ibn Abi Talib (RA)"], answer: 0, explanation: "Abu Bakr (RA) became the first Caliph after the Prophet's death in 11 AH, serving until 13 AH." },
+  { category: "Islamic History", q: "Which Caliph was known as 'Al-Faruq' (The Distinguisher)?", options: ["Umar ibn al-Khattab (RA)", "Abu Bakr (RA)", "Uthman (RA)", "Ali (RA)"], answer: 0, explanation: "Umar ibn al-Khattab (RA) was given the title Al-Faruq by the Prophet for his ability to distinguish truth from falsehood." },
+  { category: "Islamic History", q: "What was the name of the first Islamic state established in Madinah?", options: ["The Constitution of Madinah established a city-state", "The Umayyad Caliphate", "The Abbasid Caliphate", "The Rashidun Caliphate"], answer: 0, explanation: "The Prophet (PBUH) established the first Islamic polity in Madinah, governed by the Charter (Constitution) of Madinah." },
+  { category: "Islamic History", q: "Which dynasty built the city of Baghdad as their capital?", options: ["Abbasids", "Umayyads", "Fatimids", "Ottomans"], answer: 0, explanation: "The Abbasid Caliph al-Mansur founded Baghdad in 762 CE as the capital of the Abbasid Caliphate." },
+  { category: "Islamic History", q: "Who was Saladin (Salah ad-Din)?", options: ["Kurdish Muslim sultan who recaptured Jerusalem in 1187", "First Ottoman sultan", "An Abbasid caliph", "A companion of the Prophet"], answer: 0, explanation: "Salah ad-Din al-Ayyubi recaptured Jerusalem from the Crusaders in 1187 CE and was known for his chivalry." },
+  { category: "Islamic History", q: "When did the Ottoman Caliphate officially end?", options: ["1924", "1918", "1920", "1930"], answer: 0, explanation: "The Ottoman Caliphate was abolished on March 3, 1924 by Mustafa Kemal Ataturk's government." },
+  { category: "Islamic History", q: "Who was the founder of the Umayyad dynasty?", options: ["Muawiyah ibn Abi Sufyan (RA)", "Yazid ibn Muawiyah", "Abd al-Malik ibn Marwan", "Umar ibn Abd al-Aziz"], answer: 0, explanation: "Muawiyah ibn Abi Sufyan (RA) established the Umayyad Caliphate in 661 CE after the death of Ali (RA)." },
+  { category: "Islamic History", q: "Which Islamic scholar is known as the 'Imam of Hadith'?", options: ["Imam Bukhari", "Imam Malik", "Imam Ahmad ibn Hanbal", "Imam Shafi'i"], answer: 0, explanation: "Muhammad ibn Ismail al-Bukhari is often called Amir al-Mu'minin fi al-Hadith (Commander of the Faithful in Hadith)." },
+  { category: "Islamic History", q: "What are the four main schools of Islamic jurisprudence?", options: ["Hanafi, Maliki, Shafi'i, Hanbali", "Hanafi, Shia, Ibadi, Hanbali", "Bukhari, Muslim, Tirmidhi, Abu Dawood", "Sunni, Shia, Sufi, Salafi"], answer: 0, explanation: "The four Sunni madhabs (schools of fiqh) are: Hanafi (Abu Hanifah), Maliki (Imam Malik), Shafi'i (Imam Shafi'i), Hanbali (Imam Ahmad)." },
+  { category: "Islamic History", q: "Which battle ended the Umayyad Caliphate and brought the Abbasids to power?", options: ["Battle of the Zab (750 CE)", "Battle of Karbala (680 CE)", "Battle of Yarmouk (636 CE)", "Battle of Qadisiyyah (636 CE)"], answer: 0, explanation: "The Battle of the Zab (750 CE) on the Great Zab river in Iraq saw the Abbasids defeat the last Umayyad caliph Marwan II." },
+  { category: "Islamic History", q: "Who was the renowned Islamic traveler who documented the Muslim world in the 14th century?", options: ["Ibn Battuta", "Ibn Khaldun", "Al-Biruni", "Al-Idrisi"], answer: 0, explanation: "Ibn Battuta traveled over 75,000 miles across the medieval world, documenting his journeys in the Rihla." },
+  { category: "Islamic History", q: "Which Caliph standardized the Uthmanic Mushaf (official copy of the Quran)?", options: ["Uthman ibn Affan (RA)", "Abu Bakr (RA)", "Umar (RA)", "Ali (RA)"], answer: 0, explanation: "Uthman (RA) standardized the Quran into one authorized script and distributed copies to major cities, burning variants." },
+  { category: "Islamic History", q: "What was the Golden Age of Islam?", options: ["8th–13th century CE when Islamic civilization led in science and arts", "The era of the Prophet (PBUH)", "The Ottoman period", "The period of the Crusades"], answer: 0, explanation: "The Islamic Golden Age (roughly 8th–13th century) saw major advances in mathematics, astronomy, medicine, and philosophy." },
+  { category: "Islamic History", q: "Who was known as 'Umar ibn Abd al-Aziz' and why?", options: ["The 5th righteous Caliph, known for justice and piety", "The founder of the Umayyads", "An Abbasid scholar", "A companion of the Prophet"], answer: 0, explanation: "Umar ibn Abd al-Aziz (717–720 CE) is considered the 5th Righteous Caliph for his just rule and revival of Islamic values." },
+  { category: "Islamic History", q: "In which year did Islam first reach the Malay Archipelago (Southeast Asia)?", options: ["13th–14th century CE via trade", "7th century CE directly from Arabia", "10th century CE via Persia", "15th century CE via India"], answer: 0, explanation: "Islam spread to Southeast Asia primarily through Arab and Indian Muslim merchants in the 13th–14th centuries CE." },
+
+  // --- EXTRA LOGIC ---
+  { category: "Logic", q: "If it takes 5 machines 5 minutes to make 5 widgets, how long does it take 100 machines to make 100 widgets?", options: ["5 minutes", "100 minutes", "10 minutes", "50 minutes"], answer: 0, explanation: "Each machine makes 1 widget in 5 minutes. 100 machines each make 1 widget in 5 minutes = 100 widgets in 5 minutes." },
+  { category: "Logic", q: "A rooster lays an egg on the peak of a roof. Which way does it roll?", options: ["Roosters don't lay eggs", "Left", "Right", "Straight down"], answer: 0, explanation: "Roosters are male — they don't lay eggs." },
+  { category: "Logic", q: "How many times can you subtract 5 from 25?", options: ["Once", "5 times", "Infinitely", "25 times"], answer: 0, explanation: "After subtracting 5 once, you have 20 — so you're no longer subtracting from 25." },
+  { category: "Logic", q: "If all Zips are Zaps, and some Zaps are Zoops, are some Zips definitely Zoops?", options: ["No — cannot be determined", "Yes — definitely", "Only if Zoops are Zaps", "Always yes"], answer: 0, explanation: "All Zips are Zaps, but only some Zaps are Zoops. The Zips may or may not fall in the 'some' group." },
+  { category: "Logic", q: "A man walks into a restaurant and orders albatross soup. He takes one sip, goes home, and kills himself. Why?", options: ["He realized the 'albatross soup' wasn't really albatross", "He was poisoned", "He was allergic", "He lost a bet"], answer: 0, explanation: "Classic lateral thinking: he was a shipwreck survivor. He once ate 'albatross' given by a companion — really human flesh. The real soup told him the truth." },
+
+  // --- EXTRA PATTERN ---
+  { category: "Pattern", q: "What is the missing number? 4, 9, 16, 25, 36, __", options: ["49", "46", "48", "50"], answer: 0, explanation: "These are perfect squares: 2², 3², 4², 5², 6². Next is 7² = 49." },
+  { category: "Pattern", q: "Find the odd one out: 8, 27, 64, 100, 125", options: ["100", "8", "64", "125"], answer: 0, explanation: "8=2³, 27=3³, 64=4³, 125=5³ are all perfect cubes. 100 is not." },
+  { category: "Pattern", q: "Complete: J, F, M, A, M, J, J, __", options: ["A", "S", "O", "N"], answer: 0, explanation: "These are the first letters of the months: Jan, Feb, Mar, Apr, May, Jun, Jul... next is August (A)." },
+
+  // --- EXTRA MATH ---
+  { category: "Math", q: "What is the sum of angles in a triangle?", options: ["180°", "360°", "90°", "270°"], answer: 0, explanation: "The interior angles of any triangle always add up to exactly 180 degrees." },
+  { category: "Math", q: "What is the value of pi (π) to 2 decimal places?", options: ["3.14", "3.12", "3.16", "3.41"], answer: 0, explanation: "Pi (π) ≈ 3.14159... — to 2 decimal places it is 3.14." },
+  { category: "Math", q: "What is 12 × 12?", options: ["144", "122", "132", "140"], answer: 0, explanation: "12 × 12 = 144. This is also 12 squared (12²)." },
+  { category: "Math", q: "If a train travels 60 km/h and a trip takes 2.5 hours, how far did it travel?", options: ["150 km", "120 km", "140 km", "160 km"], answer: 0, explanation: "Distance = speed × time. 60 × 2.5 = 150 km." },
+
+  // --- EXTRA VERBAL ---
+  { category: "Verbal", q: "What is the antonym of 'Benevolent'?", options: ["Malevolent", "Generous", "Kind", "Charitable"], answer: 0, explanation: "Benevolent means well-wishing and kind. Malevolent means wishing evil — its direct opposite." },
+  { category: "Verbal", q: "Which word means 'to make something worse'?", options: ["Exacerbate", "Alleviate", "Mitigate", "Ameliorate"], answer: 0, explanation: "Exacerbate means to make a problem worse. The others all mean to improve or reduce." },
+  { category: "Verbal", q: "What does 'Ubiquitous' mean?", options: ["Present everywhere", "Unique and rare", "Very large", "Moving quickly"], answer: 0, explanation: "Ubiquitous means appearing or found everywhere, seemingly all at once." }
+];
+
+const TIMER_SECONDS = 30;
+let questions = [];
+let current = 0;
+let score = 0;
+let streak = 0;
+let timerInterval = null;
+let timeLeft = TIMER_SECONDS;
+let answered = false;
+let currentUsername = '';
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// --- USERNAME ---
+function checkUsername() {
+  const val = document.getElementById('usernameInput').value.trim();
+  document.getElementById('proceedBtn').disabled = val.length < 2;
+}
+
+function proceedToQuiz() {
+  const val = document.getElementById('usernameInput').value.trim();
+  if (val.length < 2) return;
+  currentUsername = val;
+  document.getElementById('usernameScreen').style.display = 'none';
+  document.getElementById('introScreen').style.display = 'block';
+
+  // Populate category preview chips
+  const cats = [...new Set(ALL_QUESTIONS.map(q => q.category))].sort();
+  const preview = document.getElementById('catPreview');
+  preview.innerHTML = '';
+  cats.forEach(cat => {
+    const chip = document.createElement('span');
+    chip.className = 'cat-preview-chip';
+    chip.textContent = cat;
+    preview.appendChild(chip);
+  });
+}
+
+// --- BUILD QUIZ: one question per category, shuffled ---
+function buildQuestions() {
+  const cats = [...new Set(ALL_QUESTIONS.map(q => q.category))];
+  const picked = [];
+  cats.forEach(cat => {
+    const pool = ALL_QUESTIONS.filter(q => q.category === cat);
+    const rand = pool[Math.floor(Math.random() * pool.length)];
+    picked.push(rand);
+  });
+  return shuffle(picked);
+}
+
+function startQuiz() {
+  questions = buildQuestions();
+  current = 0;
+  score = 0;
+  streak = 0;
+  document.getElementById('introScreen').style.display = 'none';
+  document.getElementById('quizScreen').style.display = 'block';
+  document.getElementById('qTotal').textContent = questions.length;
+  loadQuestion();
+}
+
+function loadQuestion() {
+  answered = false;
+  const q = questions[current];
+  document.getElementById('qNum').textContent = current + 1;
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('streakDisplay').textContent = streak;
+  document.getElementById('categoryTag').textContent = q.category;
+  document.getElementById('questionText').textContent = q.q;
+  document.getElementById('questionNum').textContent = `Question ${current + 1} of ${questions.length}`;
+
+  const shuffledOpts = shuffle(q.options);
+  const correctOption = q.options[q.answer];
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = '';
+  shuffledOpts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(btn, opt === correctOption, q, correctOption);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').innerHTML = '';
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.className = 'next-btn';
+  nextBtn.textContent = current === questions.length - 1 ? 'See Results →' : 'Next Question →';
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = TIMER_SECONDS;
+  const bar = document.getElementById('timerBar');
+  bar.style.width = '100%';
+  bar.style.background = '#a78bfa';
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    const pct = (timeLeft / TIMER_SECONDS) * 100;
+    bar.style.width = pct + '%';
+    if (pct < 30) bar.style.background = '#f87171';
+    else if (pct < 60) bar.style.background = '#fbbf24';
+    if (timeLeft <= 0) { clearInterval(timerInterval); if (!answered) timeUp(); }
+  }, 1000);
+}
+
+function timeUp() {
+  answered = true;
+  streak = 0;
+  const q = questions[current];
+  const correctOption = q.options[q.answer];
+  document.querySelectorAll('.option').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === correctOption) b.classList.add('correct');
+  });
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback wrong-fb show';
+  fb.innerHTML = `<strong>⏱ Time's up!</strong> ${q.explanation}`;
+  document.getElementById('nextBtn').className = 'next-btn show';
+}
+
+function selectAnswer(btn, isCorrect, q, correctOption) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  document.querySelectorAll('.option').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === correctOption) b.classList.add('correct');
+  });
+  const fb = document.getElementById('feedback');
+  if (isCorrect) {
+    btn.classList.add('correct');
+    score++;
+    streak++;
+    fb.className = 'feedback correct-fb show';
+    fb.innerHTML = `<strong>✓ Correct!</strong> ${q.explanation}`;
+  } else {
+    btn.classList.add('wrong');
+    streak = 0;
+    fb.className = 'feedback wrong-fb show';
+    fb.innerHTML = `<strong>✗ Not quite.</strong> ${q.explanation}`;
+  }
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('streakDisplay').textContent = streak;
+  document.getElementById('nextBtn').className = 'next-btn show';
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) showResult();
+  else loadQuestion();
+}
+
+async function showResult() {
+  clearInterval(timerInterval);
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'block';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('scoreLabel').textContent = `out of ${questions.length}`;
+
+  const pct = score / questions.length;
+  const verdicts = [
+    [0,    0.3,  "Keep at it.",     "Every genius starts somewhere. Try again!"],
+    [0.3,  0.5,  "Getting warmer.", "Solid effort — your mind is waking up."],
+    [0.5,  0.7,  "Sharp mind.",     "Above average. Well done."],
+    [0.7,  0.9,  "Impressive!",     "Your analytical thinking is firing on all cylinders."],
+    [0.9,  1.01, "Flawless.",       "Perfect (or near-perfect) score. Genuinely rare."]
+  ];
+  for (const [lo, hi, v, s] of verdicts) {
+    if (pct >= lo && pct < hi) {
+      document.getElementById('verdict').textContent = v;
+      document.getElementById('verdictSub').textContent = s;
+      break;
+    }
+  }
+
+  // Save score then load leaderboard
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = 'Saving your score...';
+  statusEl.className = 'save-status';
+  let saved = false;
+  if (typeof window._saveScore === 'function') {
+    saved = await window._saveScore(currentUsername, score, questions.length);
+  }
+  statusEl.textContent = saved ? '✓ Score saved!' : '✗ Could not save score.';
+  statusEl.className = saved ? 'save-status ok' : 'save-status err';
+
+  // Load leaderboard
+  renderLeaderboard();
+}
+
+async function renderLeaderboard() {
+  const el = document.getElementById('leaderboardList');
+  if (typeof window._loadLeaderboard !== 'function') {
+    el.innerHTML = '<div class="lb-loading">Leaderboard unavailable.</div>';
+    return;
+  }
+  const records = await window._loadLeaderboard();
+  if (!records || records.length === 0) {
+    el.innerHTML = '<div class="lb-loading">No scores yet. You\'re the first!</div>';
+    return;
+  }
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const rankClasses = ['gold', 'silver', 'bronze'];
+  el.innerHTML = records.map((r, i) => {
+    const isMe = r.username?.toLowerCase() === currentUsername.toLowerCase();
+    const rankLabel = i < 3
+      ? `<span class="lb-rank ${rankClasses[i]}">${medals[i]}</span>`
+      : `<span class="lb-rank">${i + 1}</span>`;
+    return `<div class="lb-row ${isMe ? 'me' : ''}">
+      ${rankLabel}
+      <span class="lb-name ${isMe ? 'me' : ''}">${esc(r.username || '?')}${isMe ? ' (you)' : ''}</span>
+      <span class="lb-score">${r.percentage ?? '?'}%</span>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function restartQuiz() {
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('introScreen').style.display = 'block';
+}
+</script>
+</body>
+</html>
