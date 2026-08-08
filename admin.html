@@ -161,6 +161,7 @@
     <option value="timestamp_asc">Oldest first</option>
     <option value="percentage_desc">Highest score first</option>
     <option value="percentage_asc">Lowest score first</option>
+    <option value="time_asc">Fastest time first</option>
     <option value="username_asc">Username A–Z</option>
   </select>
   <button class="btn secondary" onclick="loadData()">↻ Refresh</button>
@@ -238,6 +239,7 @@ window.applyFilters = function() {
     if (sort === 'percentage_desc') return (b.percentage || 0) - (a.percentage || 0);
     if (sort === 'percentage_asc')  return (a.percentage || 0) - (b.percentage || 0);
     if (sort === 'username_asc') return (a.username||'').localeCompare(b.username||'');
+    if (sort === 'time_asc') return (a.timeTaken || 999) - (b.timeTaken || 999);
     return 0;
   });
 
@@ -262,8 +264,8 @@ function renderTable() {
       <th onclick="sortBy('username_asc')">Username</th>
       <th onclick="sortBy('percentage_desc')">Score</th>
       <th>Result</th>
+      <th onclick="sortBy('time_asc')">Time Taken</th>
       <th>Questions</th>
-      <th>Categories</th>
       <th onclick="sortBy('timestamp_desc')">Date & Time</th>
     </tr></thead><tbody>`;
 
@@ -272,13 +274,15 @@ function renderTable() {
     const pct = r.percentage ?? Math.round((r.score / r.total) * 100);
     const badgeClass = pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
     const dt = r.timestamp?.toDate ? r.timestamp.toDate().toLocaleString() : '—';
+    const t = r.timeTaken;
+    const timeStr = t ? (Math.floor(t/60) > 0 ? `${Math.floor(t/60)}m ${t%60}s` : `${t}s`) : '—';
     html += `<tr>
       <td style="color:#444">${rank}</td>
       <td style="color:#f0f0ff;font-weight:600">${esc(r.username || '—')}</td>
       <td><strong style="color:#e0e0f0">${r.score ?? '?'}/${r.total ?? '?'}</strong></td>
       <td><span class="badge ${badgeClass}">${pct}%</span></td>
+      <td style="color:#a78bfa;font-weight:600">${timeStr}</td>
       <td style="color:#666">${r.total ?? '?'}</td>
-      <td style="color:#666;max-width:220px;white-space:normal">${esc(r.categories || '—')}</td>
       <td style="color:#555">${dt}</td>
     </tr>`;
   });
