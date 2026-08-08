@@ -317,6 +317,14 @@
   .save-status.ok { color: #34d399; }
   .save-status.err { color: #f87171; }
 
+  /* ---- TIME TAKEN ---- */
+  .time-taken {
+    font-size: 1rem;
+    color: #888;
+    margin-bottom: 8px;
+  }
+  .time-taken span { color: #a78bfa; font-weight: 700; }
+
   /* ---- LEADERBOARD ---- */
   .leaderboard { margin-top: 28px; text-align: left; }
   .leaderboard h3 { font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; color: #555; margin-bottom: 14px; text-align: center; }
@@ -339,6 +347,7 @@
   .lb-name { flex: 1; font-size: 0.9rem; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lb-name.me { color: #c4b5fd; font-weight: 700; }
   .lb-score { font-size: 0.85rem; font-weight: 700; color: #a78bfa; }
+  .lb-time { font-size: 0.75rem; color: #555; margin-left: 8px; }
   .lb-loading { text-align: center; padding: 20px; color: #444; font-size: 0.85rem; }
 
   @media (max-width: 480px) {
@@ -403,7 +412,8 @@
   <div class="card" id="resultScreen" style="display:none">
     <div class="result show">
       <div class="big-score" id="finalScore"></div>
-      <div class="score-label" id="scoreLabel">out of 10</div>
+      <div class="score-label" id="scoreLabel">out of 15</div>
+      <div class="time-taken" id="timeTakenDisplay"></div>
       <div class="verdict" id="verdict"></div>
       <div class="verdict-sub" id="verdictSub"></div>
       <div class="save-status" id="saveStatus"></div>
@@ -432,13 +442,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-window._saveScore = async function(username, score, total) {
+window._saveScore = async function(username, score, total, timeTaken) {
   try {
     await addDoc(collection(db, "scores"), {
       username,
       score,
       total,
       percentage: Math.round((score / total) * 100),
+      timeTaken,
       timestamp: serverTimestamp()
     });
     return true;
@@ -450,16 +461,21 @@ window._saveScore = async function(username, score, total) {
 
 window._loadLeaderboard = async function() {
   try {
-    const q = query(collection(db, "scores"), orderBy("percentage", "desc"), limit(20));
+    const q = query(collection(db, "scores"), orderBy("percentage", "desc"), limit(50));
     const snap = await getDocs(q);
     const all = snap.docs.map(d => d.data());
-    // keep only the best score per username
+    // best attempt per username = highest %, then fastest time
     const seen = new Map();
     all.forEach(r => {
       const key = (r.username || '').toLowerCase();
-      if (!seen.has(key) || r.percentage > seen.get(key).percentage) seen.set(key, r);
+      if (!seen.has(key)) { seen.set(key, r); return; }
+      const prev = seen.get(key);
+      if (r.percentage > prev.percentage) { seen.set(key, r); return; }
+      if (r.percentage === prev.percentage && (r.timeTaken || 999) < (prev.timeTaken || 999)) seen.set(key, r);
     });
-    return [...seen.values()].sort((a,b) => b.percentage - a.percentage).slice(0, 10);
+    return [...seen.values()]
+      .sort((a, b) => b.percentage - a.percentage || (a.timeTaken || 999) - (b.timeTaken || 999))
+      .slice(0, 10);
   } catch (e) {
     console.error("Leaderboard load failed:", e);
     return null;
@@ -794,11 +810,11 @@ const ALL_QUESTIONS = [
   { category: "Verbal", q: "Which word means 'to make something worse'?", options: ["Exacerbate", "Alleviate", "Mitigate", "Ameliorate"], answer: 0, explanation: "Exacerbate means to make a problem worse. The others all mean to improve or reduce." },
   { category: "Verbal", q: "What does 'Ubiquitous' mean?", options: ["Present everywhere", "Unique and rare", "Very large", "Moving quickly"], answer: 0, explanation: "Ubiquitous means appearing or found everywhere, seemingly all at once." },
   // --- GEOGRAPHY & FLAGS ---
-  { category: "Geography", q: "Which country does this flag belong to? 🇯🇵", options: ["Japan", "China", "South Korea", "Taiwan"], answer: 0, explanation: "The Japanese flag (Nisshōki) features a red circle on white, representing the sun." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇧🇷", options: ["Brazil", "Argentina", "Bolivia", "Venezuela"], answer: 0, explanation: "Brazil's flag is green and yellow with a blue globe — the only South American flag with those colours." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇸🇦", options: ["Saudi Arabia", "UAE", "Oman", "Qatar"], answer: 0, explanation: "Saudi Arabia's flag features the Shahada (Islamic declaration of faith) and a sword." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇹🇷", options: ["Turkey", "Tunisia", "Pakistan", "Azerbaijan"], answer: 0, explanation: "Turkey's flag has a white crescent and star on red — one of the oldest national flag designs." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇦🇺", options: ["Australia", "New Zealand", "Fiji", "Tuvalu"], answer: 0, explanation: "Australia's flag features the Union Jack, the Southern Cross, and the Commonwealth Star." },
+  { category: "Geography", q: "Which country's flag is a red circle on a white background?", options: ["Japan", "South Korea", "China", "Taiwan"], answer: 0, explanation: "Japan's flag (Nisshōki) features a red circle representing the sun on a plain white background." },
+  { category: "Geography", q: "Which country's flag features a large yellow diamond on a green background with a blue globe?", options: ["Brazil", "Argentina", "Bolivia", "Venezuela"], answer: 0, explanation: "Brazil's flag (Verde e Amarela) is instantly recognisable — green, yellow, and a blue celestial globe." },
+  { category: "Geography", q: "Which country's flag has the Islamic declaration of faith (Shahada) written on it?", options: ["Saudi Arabia", "UAE", "Pakistan", "Qatar"], answer: 0, explanation: "Saudi Arabia's flag features the Shahada and a sword — the only national flag with a sword." },
+  { category: "Geography", q: "Which country's flag has a white crescent and star on a red background?", options: ["Turkey", "Tunisia", "Morocco", "Algeria"], answer: 0, explanation: "Turkey's red flag with white crescent and star is one of the oldest national flag designs, dating back centuries." },
+  { category: "Geography", q: "Which country's flag features the Union Jack, the Southern Cross, and the Commonwealth Star?", options: ["Australia", "New Zealand", "Fiji", "Tuvalu"], answer: 0, explanation: "Australia's flag has all three elements. New Zealand's is similar but has only 4 stars and no Commonwealth Star." },
   { category: "Geography", q: "What is the capital of Brazil?", options: ["Brasília", "São Paulo", "Rio de Janeiro", "Salvador"], answer: 0, explanation: "Brasília replaced Rio de Janeiro as capital in 1960 — it was purpose-built in just 41 months." },
   { category: "Geography", q: "Which is the largest country in the world by area?", options: ["Russia", "Canada", "China", "USA"], answer: 0, explanation: "Russia covers 17.1 million km² — nearly twice the size of second-place Canada." },
   { category: "Geography", q: "What is the capital of Canada?", options: ["Ottawa", "Toronto", "Vancouver", "Montreal"], answer: 0, explanation: "Ottawa is Canada's capital — a common trick question since Toronto is the largest city." },
@@ -806,30 +822,30 @@ const ALL_QUESTIONS = [
   { category: "Geography", q: "Which ocean is the deepest?", options: ["Pacific", "Atlantic", "Indian", "Arctic"], answer: 0, explanation: "The Mariana Trench in the Pacific Ocean is the deepest point on Earth at ~11,000 metres." },
   { category: "Geography", q: "Which country has the most natural lakes?", options: ["Canada", "Russia", "Brazil", "USA"], answer: 0, explanation: "Canada has over 3 million lakes — more than any other country in the world." },
   { category: "Geography", q: "What is the capital of Turkey?", options: ["Ankara", "Istanbul", "Izmir", "Bursa"], answer: 0, explanation: "Ankara is Turkey's capital since 1923. Istanbul is the largest city but not the capital." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇲🇾", options: ["Malaysia", "Indonesia", "Brunei", "Singapore"], answer: 0, explanation: "Malaysia's Jalur Gemilang (Stripes of Glory) has 14 red-and-white stripes and a crescent with a 14-pointed star." },
+  { category: "Geography", q: "Which country's flag is called 'Jalur Gemilang' (Stripes of Glory) and has a crescent with a 14-pointed star?", options: ["Malaysia", "Indonesia", "Brunei", "Singapore"], answer: 0, explanation: "Malaysia's Jalur Gemilang has 14 red-and-white stripes representing its 13 states and federal government." },
   { category: "Geography", q: "The Sahara Desert is located on which continent?", options: ["Africa", "Asia", "Australia", "South America"], answer: 0, explanation: "The Sahara is the world's largest hot desert, covering much of North Africa." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇵🇸", options: ["Palestine", "Jordan", "Sudan", "Yemen"], answer: 0, explanation: "The Palestinian flag features the Pan-Arab colours: black, white, green horizontal stripes with a red triangle." },
+  { category: "Geography", q: "Which country's flag uses the Pan-Arab colours (black, white, green, red) with a triangle on the left?", options: ["Palestine", "Libya", "Sudan", "Iraq"], answer: 0, explanation: "The Palestinian flag has black, white, and green horizontal stripes with a red triangle on the hoist side." },
   { category: "Geography", q: "What is the longest mountain range in the world?", options: ["The Andes", "The Himalayas", "The Rockies", "The Alps"], answer: 0, explanation: "The Andes in South America stretch ~7,000 km — the world's longest continental mountain range." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇮🇩", options: ["Indonesia", "Monaco", "Poland", "Singapore"], answer: 0, explanation: "Indonesia's flag (Sang Saka Merah-Putih) is red over white, almost identical to Monaco's but larger." },
+  { category: "Geography", q: "Which country's flag is two horizontal bands — red on top, white on bottom — and is often confused with Monaco's?", options: ["Indonesia", "Poland", "Singapore", "Japan"], answer: 0, explanation: "Indonesia's flag (Sang Saka Merah-Putih) is red over white, almost identical to Monaco's but a different ratio." },
   { category: "Geography", q: "In which continent is the Nile River located?", options: ["Africa", "Asia", "South America", "Europe"], answer: 0, explanation: "The Nile flows northward through northeastern Africa, passing through 11 countries." },
   { category: "Geography", q: "What is the smallest continent by area?", options: ["Australia", "Europe", "Antarctica", "South America"], answer: 0, explanation: "Australia (Oceania) is the smallest continent at about 7.7 million km²." },
-  { category: "Geography", q: "Which country does this flag belong to? 🇸🇬", options: ["Singapore", "Indonesia", "Malaysia", "Brunei"], answer: 0, explanation: "Singapore's flag has a red upper half and white lower half, with a crescent moon and five stars." },
+  { category: "Geography", q: "Which country's flag has a red upper half, white lower half, with a crescent moon and five stars?", options: ["Singapore", "Indonesia", "Malaysia", "Brunei"], answer: 0, explanation: "Singapore's flag — the crescent represents a rising nation, and the five stars represent democracy, peace, progress, justice, and equality." },
 
   // --- VISUAL IQ ---
-  { category: "Visual IQ", q: "Which shape comes next in the pattern?\n⬛⬜⬛⬜⬛⬜ → ?", options: ["⬛", "⬜", "🔲", "◼"], answer: 0, explanation: "The pattern alternates black and white. After white (⬜), the next is black (⬛)." },
-  { category: "Visual IQ", q: "Complete the pattern: 🔴🔵🔴🔵🔴 → ?", options: ["🔵", "🔴", "🟡", "🟢"], answer: 0, explanation: "Simple alternating pattern: red, blue, red, blue, red... next is blue." },
-  { category: "Visual IQ", q: "Which is the odd one out?\n🟦🟦🟥🟦🟦", options: ["🟥", "🟦 (first)", "🟦 (last)", "None"], answer: 0, explanation: "The red square (🟥) is the only different element among the blue squares." },
-  { category: "Visual IQ", q: "How many triangles are in a Star of David (✡)?", options: ["2", "6", "12", "8"], answer: 0, explanation: "A Star of David is formed by 2 overlapping triangles — one pointing up, one pointing down." },
-  { category: "Visual IQ", q: "A clock shows 3:15. What is the angle between the hour and minute hands?", options: ["7.5°", "0°", "90°", "45°"], answer: 0, explanation: "At 3:00 the angle is 90°. By 3:15 the hour hand moves 7.5° further, making the angle 90° - 7.5° = 7.5°." },
-  { category: "Visual IQ", q: "Complete the sequence: 🟡🟡🔵 🟡🟡🔵 🟡🟡 → ?", options: ["🔵", "🟡", "🔴", "🟢"], answer: 0, explanation: "The pattern is two yellows followed by one blue, repeating. Next must be blue." },
-  { category: "Visual IQ", q: "How many squares are in a 3×3 grid (counting all sizes)?", options: ["14", "9", "12", "16"], answer: 0, explanation: "Nine 1×1 squares + four 2×2 squares + one 3×3 square = 14 total squares." },
-  { category: "Visual IQ", q: "A cube has 6 faces. If you unfold it flat, which shape do you get?", options: ["A cross shape (6 connected squares)", "A rectangle", "A hexagon", "A star"], answer: 0, explanation: "Unfolding a cube produces a cross-shaped net of 6 connected squares — one of 11 possible nets." },
-  { category: "Visual IQ", q: "Which number is missing? 1️⃣ 4️⃣ 9️⃣ ❓ 2️⃣5️⃣", options: ["16", "12", "15", "18"], answer: 0, explanation: "These are perfect squares: 1, 4, 9, 16, 25. The missing number is 16 (4²)." },
-  { category: "Visual IQ", q: "If you rotate the letter 'p' 180°, what letter does it resemble?", options: ["d", "b", "q", "n"], answer: 0, explanation: "Rotating 'p' 180° (upside down AND mirrored) gives 'd'." },
+  { category: "Visual IQ", q: "A pattern goes: Black, White, Black, White, Black, White... What comes next?", options: ["Black", "White", "Grey", "None"], answer: 0, explanation: "Simple alternating pattern — after White, the next is Black." },
+  { category: "Visual IQ", q: "Complete the pattern: Circle, Square, Circle, Square, Circle... What comes next?", options: ["Square", "Circle", "Triangle", "Diamond"], answer: 0, explanation: "Alternating shapes — after Circle, the next is Square." },
+  { category: "Visual IQ", q: "How many triangles are in a Star of David (six-pointed star)?", options: ["2", "6", "12", "8"], answer: 0, explanation: "A Star of David is formed by 2 overlapping triangles — one pointing up, one pointing down." },
+  { category: "Visual IQ", q: "A clock shows 3:15. What is the angle between the hour and minute hands?", options: ["7.5°", "0°", "90°", "45°"], answer: 0, explanation: "At 3:00 the angle is 90°. By 3:15 the hour hand moves 7.5° further, making the angle 7.5°." },
+  { category: "Visual IQ", q: "How many squares are in a 3×3 grid (counting all sizes — 1×1, 2×2, and 3×3)?", options: ["14", "9", "12", "16"], answer: 0, explanation: "Nine 1×1 + four 2×2 + one 3×3 = 14 total squares." },
+  { category: "Visual IQ", q: "A cube has 6 faces. If you unfold it completely flat, what shape do you get?", options: ["A cross of 6 connected squares", "A rectangle", "A hexagon", "A large square"], answer: 0, explanation: "Unfolding a cube produces a cross-shaped net of 6 connected squares." },
+  { category: "Visual IQ", q: "Which number is missing from this sequence: 1, 4, 9, __, 25?", options: ["16", "12", "15", "18"], answer: 0, explanation: "These are perfect squares: 1², 2², 3², 4², 5². The missing number is 4² = 16." },
+  { category: "Visual IQ", q: "If you rotate the letter 'p' 180 degrees, what letter does it most resemble?", options: ["d", "b", "q", "n"], answer: 0, explanation: "Rotating 'p' 180° (flipped both horizontally and vertically) gives 'd'." },
+  { category: "Visual IQ", q: "A pattern: 2 red, 1 blue, 2 red, 1 blue, 2 red... What comes next?", options: ["1 blue", "2 red", "1 red", "2 blue"], answer: 0, explanation: "The repeating group is '2 red, 1 blue'. After 2 red, the next is 1 blue." },
+  { category: "Visual IQ", q: "How many faces does a triangular prism have?", options: ["5", "4", "6", "3"], answer: 0, explanation: "A triangular prism has 2 triangular faces and 3 rectangular faces = 5 faces total." },
 
 ];
 
-const TIMER_SECONDS = 30;
+const TIMER_SECONDS = 20;
 let questions = [];
 let current = 0;
 let score = 0;
@@ -839,6 +855,7 @@ let timeLeft = TIMER_SECONDS;
 let answered = false;
 let selectedOption = null;
 let currentUsername = '';
+let quizStartTime = 0;
 
 // --- SOUND ENGINE (Web Audio API — no files needed) ---
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -932,6 +949,7 @@ function proceedToQuiz() {
 function startQuiz() {
   questions = buildQuestions();
   current = 0; score = 0; streak = 0;
+  quizStartTime = Date.now();
   document.getElementById('introScreen').style.display = 'none';
   document.getElementById('quizScreen').style.display = 'block';
   document.getElementById('qTotal').textContent = questions.length;
@@ -1056,7 +1074,7 @@ function nextQuestion() {
 
 async function showResult() {
   clearInterval(timerInterval);
-  // Mark these questions as seen
+  const timeTaken = Math.round((Date.now() - quizStartTime) / 1000);
   const seenIndices = questions.map(q => ALL_QUESTIONS.indexOf(q));
   markSeen(seenIndices);
 
@@ -1064,6 +1082,7 @@ async function showResult() {
   document.getElementById('resultScreen').style.display = 'block';
   document.getElementById('finalScore').textContent = score;
   document.getElementById('scoreLabel').textContent = `out of ${questions.length}`;
+  document.getElementById('timeTakenDisplay').innerHTML = `Completed in <span>${fmtTime(timeTaken)}</span>`;
 
   const pct = score / questions.length;
   const verdicts = [
@@ -1086,11 +1105,17 @@ async function showResult() {
   statusEl.className = 'save-status';
   let saved = false;
   if (typeof window._saveScore === 'function') {
-    saved = await window._saveScore(currentUsername, score, questions.length);
+    saved = await window._saveScore(currentUsername, score, questions.length, timeTaken);
   }
   statusEl.textContent = saved ? '✓ Score saved!' : '✗ Could not save score.';
   statusEl.className = saved ? 'save-status ok' : 'save-status err';
   renderLeaderboard();
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
 }
 
 async function renderLeaderboard() {
@@ -1109,10 +1134,11 @@ async function renderLeaderboard() {
     const rankLabel = i < 3
       ? `<span class="lb-rank ${rankClasses[i]}">${medals[i]}</span>`
       : `<span class="lb-rank">${i + 1}</span>`;
+    const timeStr = r.timeTaken ? `<span class="lb-time">${fmtTime(r.timeTaken)}</span>` : '';
     return `<div class="lb-row ${isMe ? 'me' : ''}">
       ${rankLabel}
       <span class="lb-name ${isMe ? 'me' : ''}">${esc(r.username || '?')}${isMe ? ' (you)' : ''}</span>
-      <span class="lb-score">${r.percentage ?? '?'}%</span>
+      <span class="lb-score">${r.percentage ?? '?'}%${timeStr}</span>
     </div>`;
   }).join('');
 }
