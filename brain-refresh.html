@@ -1186,4 +1186,80 @@ async function showResult() {
     [0.9,  1.01, "Flawless.",       "Perfect (or near-perfect) score. Genuinely rare."]
   ];
   for (const [lo, hi, v, s] of verdicts) {
-    if
+    if (pct >= lo && pct < hi) {
+      document.getElementById('verdict').textContent = v;
+      document.getElementById('verdictSub').textContent = s;
+      break;
+    }
+  }
+
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = 'Saving your score...';
+  statusEl.className = 'save-status';
+  let saved = false;
+  if (typeof window._saveScore === 'function') {
+    saved = await window._saveScore(currentUsername, score, questions.length, timeTaken);
+  }
+  statusEl.textContent = saved ? '✓ Score saved!' : '✗ Could not save score.';
+  statusEl.className = saved ? 'save-status ok' : 'save-status err';
+  renderLeaderboard();
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+}
+
+async function renderLeaderboard() {
+  const el = document.getElementById('leaderboardList');
+  if (typeof window._loadLeaderboard !== 'function') {
+    el.innerHTML = '<div class="lb-loading">Leaderboard unavailable.</div>'; return;
+  }
+  const records = await window._loadLeaderboard();
+  if (!records || records.length === 0) {
+    el.innerHTML = '<div class="lb-loading">No scores yet. You\'re the first!</div>'; return;
+  }
+  const medals = ['🥇', '🥈', '🥉'];
+  const rankClasses = ['gold', 'silver', 'bronze'];
+  el.innerHTML = records.map((r, i) => {
+    const isMe = r.username?.toLowerCase() === currentUsername.toLowerCase();
+    const rankLabel = i < 3
+      ? `<span class="lb-rank ${rankClasses[i]}">${medals[i]}</span>`
+      : `<span class="lb-rank">${i + 1}</span>`;
+    const timeStr = r.timeTaken ? `<span class="lb-time">${fmtTime(r.timeTaken)}</span>` : '';
+    return `<div class="lb-row ${isMe ? 'me' : ''}">
+      ${rankLabel}
+      <span class="lb-name ${isMe ? 'me' : ''}">${esc(r.username || '?')}${isMe ? ' (you)' : ''}</span>
+      <span class="lb-score">${r.percentage ?? '?'}%${timeStr}</span>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function restartQuiz() {
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('introScreen').style.display = 'block';
+}
+</script>
+<style>
+  .signature {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: #1e1e35;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: color 0.4s;
+  }
+  .signature:hover { color: #444; pointer-events: auto; }
+</style>
+<div class="signature">crafted by umarosli86</div>
+</body>
+</html>
