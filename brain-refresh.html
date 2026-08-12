@@ -1162,13 +1162,18 @@ function restartQuiz() {
 </script>
 <style>
   .signature {
-    text-align: center;
-    margin-top: 28px;
-    font-size: 0.72rem;
-    color: #2a2a45;
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: #1e1e35;
     letter-spacing: 0.5px;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: color 0.4s;
   }
-  .signature:hover { color: #555; transition: color 0.4s; }
+  .signature:hover { color: #444; pointer-events: auto; }
 </style>
 <div class="signature">crafted by umarosli86</div>
 </body>
