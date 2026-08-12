@@ -97,6 +97,14 @@
     margin-bottom: 8px;
     color: #f0f0ff;
   }
+  .flag-img {
+    display: block;
+    height: 80px;
+    width: auto;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
 
   .question-num {
     font-size: 0.8rem;
@@ -810,26 +818,26 @@ const ALL_QUESTIONS = [
   { category: "Verbal", q: "Which word means 'to make something worse'?", options: ["Exacerbate", "Alleviate", "Mitigate", "Ameliorate"], answer: 0, explanation: "Exacerbate means to make a problem worse. The others all mean to improve or reduce." },
   { category: "Verbal", q: "What does 'Ubiquitous' mean?", options: ["Present everywhere", "Unique and rare", "Very large", "Moving quickly"], answer: 0, explanation: "Ubiquitous means appearing or found everywhere, seemingly all at once." },
   // --- GEOGRAPHY & FLAGS ---
-  { category: "Geography", q: "Which country's flag is a red circle on a white background?", options: ["Japan", "South Korea", "China", "Taiwan"], answer: 0, explanation: "Japan's flag (Nisshōki) features a red circle representing the sun on a plain white background." },
-  { category: "Geography", q: "Which country's flag features a large yellow diamond on a green background with a blue globe?", options: ["Brazil", "Argentina", "Bolivia", "Venezuela"], answer: 0, explanation: "Brazil's flag (Verde e Amarela) is instantly recognisable — green, yellow, and a blue celestial globe." },
-  { category: "Geography", q: "Which country's flag has the Islamic declaration of faith (Shahada) written on it?", options: ["Saudi Arabia", "UAE", "Pakistan", "Qatar"], answer: 0, explanation: "Saudi Arabia's flag features the Shahada and a sword — the only national flag with a sword." },
-  { category: "Geography", q: "Which country's flag has a white crescent and star on a red background?", options: ["Turkey", "Tunisia", "Morocco", "Algeria"], answer: 0, explanation: "Turkey's red flag with white crescent and star is one of the oldest national flag designs, dating back centuries." },
-  { category: "Geography", q: "Which country's flag features the Union Jack, the Southern Cross, and the Commonwealth Star?", options: ["Australia", "New Zealand", "Fiji", "Tuvalu"], answer: 0, explanation: "Australia's flag has all three elements. New Zealand's is similar but has only 4 stars and no Commonwealth Star." },
-  { category: "Geography", q: "What is the capital of Brazil?", options: ["Brasília", "São Paulo", "Rio de Janeiro", "Salvador"], answer: 0, explanation: "Brasília replaced Rio de Janeiro as capital in 1960 — it was purpose-built in just 41 months." },
+  { category: "Geography", q: '<img src="svg/jp.svg" class="flag-img"> Which country does this flag belong to?', options: ["Japan", "South Korea", "China", "Taiwan"], answer: 0, explanation: "Japan's flag (Nisshōki) features a red circle representing the sun on a plain white background." },
+  { category: "Geography", q: '<img src="svg/br.svg" class="flag-img"> Which country does this flag belong to?', options: ["Brazil", "Argentina", "Bolivia", "Venezuela"], answer: 0, explanation: "Brazil's flag is green and yellow with a blue celestial globe — unique in South America." },
+  { category: "Geography", q: '<img src="svg/sa.svg" class="flag-img"> Which country does this flag belong to?', options: ["Saudi Arabia", "UAE", "Pakistan", "Qatar"], answer: 0, explanation: "Saudi Arabia's flag features the Shahada and a sword — the only national flag with a sword." },
+  { category: "Geography", q: '<img src="svg/tr.svg" class="flag-img"> Which country does this flag belong to?', options: ["Turkey", "Tunisia", "Morocco", "Algeria"], answer: 0, explanation: "Turkey's red flag with white crescent and star is one of the oldest national flag designs." },
+  { category: "Geography", q: '<img src="svg/au.svg" class="flag-img"> Which country does this flag belong to?', options: ["Australia", "New Zealand", "Fiji", "Tuvalu"], answer: 0, explanation: "Australia's flag has the Union Jack, the Southern Cross, and the Commonwealth Star." },
+  { category: "Geography", q: '<img src="svg/my.svg" class="flag-img"> Which country does this flag belong to?', options: ["Malaysia", "Indonesia", "Brunei", "Singapore"], answer: 0, explanation: "Malaysia's Jalur Gemilang has 14 red-and-white stripes and a crescent with a 14-pointed star." },
+  { category: "Geography", q: '<img src="svg/sg.svg" class="flag-img"> Which country does this flag belong to?', options: ["Singapore", "Indonesia", "Malaysia", "Brunei"], answer: 0, explanation: "Singapore's flag — red over white, with a crescent and five stars representing core national values." },
+  { category: "Geography", q: '<img src="svg/id.svg" class="flag-img"> Which country does this flag belong to?', options: ["Indonesia", "Monaco", "Poland", "Singapore"], answer: 0, explanation: "Indonesia's flag (Sang Saka Merah-Putih) is red over white — almost identical to Monaco's but a different ratio." },
+  { category: "Geography", q: '<img src="svg/ps.svg" class="flag-img"> Which country does this flag belong to?', options: ["Palestine", "Jordan", "Sudan", "Yemen"], answer: 0, explanation: "The Palestinian flag uses Pan-Arab colours — black, white, and green stripes with a red triangle." },
+  { category: "Geography", q: '<img src="svg/pk.svg" class="flag-img"> Which country does this flag belong to?', options: ["Pakistan", "Algeria", "Comoros", "Turkmenistan"], answer: 0, explanation: "Pakistan's flag has a white crescent and star on dark green, with a white stripe on the hoist side." },
+  { category: "Geography", q: '<img src="svg/eg.svg" class="flag-img"> Which country does this flag belong to?', options: ["Egypt", "Iraq", "Syria", "Yemen"], answer: 0, explanation: "Egypt's flag has red, white, and black horizontal stripes with the Eagle of Saladin in the centre." },
+  { category: "Geography", q: "What is the capital of Brazil?", options: ["Brasília", "São Paulo", "Rio de Janeiro", "Salvador"], answer: 0, explanation: "Brasília replaced Rio de Janeiro as capital in 1960 — purpose-built in just 41 months." },
   { category: "Geography", q: "Which is the largest country in the world by area?", options: ["Russia", "Canada", "China", "USA"], answer: 0, explanation: "Russia covers 17.1 million km² — nearly twice the size of second-place Canada." },
   { category: "Geography", q: "What is the capital of Canada?", options: ["Ottawa", "Toronto", "Vancouver", "Montreal"], answer: 0, explanation: "Ottawa is Canada's capital — a common trick question since Toronto is the largest city." },
   { category: "Geography", q: "The Amazon River flows primarily through which country?", options: ["Brazil", "Peru", "Colombia", "Venezuela"], answer: 0, explanation: "About 60% of the Amazon basin lies within Brazil, though the river's source is in Peru." },
   { category: "Geography", q: "Which ocean is the deepest?", options: ["Pacific", "Atlantic", "Indian", "Arctic"], answer: 0, explanation: "The Mariana Trench in the Pacific Ocean is the deepest point on Earth at ~11,000 metres." },
   { category: "Geography", q: "Which country has the most natural lakes?", options: ["Canada", "Russia", "Brazil", "USA"], answer: 0, explanation: "Canada has over 3 million lakes — more than any other country in the world." },
   { category: "Geography", q: "What is the capital of Turkey?", options: ["Ankara", "Istanbul", "Izmir", "Bursa"], answer: 0, explanation: "Ankara is Turkey's capital since 1923. Istanbul is the largest city but not the capital." },
-  { category: "Geography", q: "Which country's flag is called 'Jalur Gemilang' (Stripes of Glory) and has a crescent with a 14-pointed star?", options: ["Malaysia", "Indonesia", "Brunei", "Singapore"], answer: 0, explanation: "Malaysia's Jalur Gemilang has 14 red-and-white stripes representing its 13 states and federal government." },
   { category: "Geography", q: "The Sahara Desert is located on which continent?", options: ["Africa", "Asia", "Australia", "South America"], answer: 0, explanation: "The Sahara is the world's largest hot desert, covering much of North Africa." },
-  { category: "Geography", q: "Which country's flag uses the Pan-Arab colours (black, white, green, red) with a triangle on the left?", options: ["Palestine", "Libya", "Sudan", "Iraq"], answer: 0, explanation: "The Palestinian flag has black, white, and green horizontal stripes with a red triangle on the hoist side." },
   { category: "Geography", q: "What is the longest mountain range in the world?", options: ["The Andes", "The Himalayas", "The Rockies", "The Alps"], answer: 0, explanation: "The Andes in South America stretch ~7,000 km — the world's longest continental mountain range." },
-  { category: "Geography", q: "Which country's flag is two horizontal bands — red on top, white on bottom — and is often confused with Monaco's?", options: ["Indonesia", "Poland", "Singapore", "Japan"], answer: 0, explanation: "Indonesia's flag (Sang Saka Merah-Putih) is red over white, almost identical to Monaco's but a different ratio." },
-  { category: "Geography", q: "In which continent is the Nile River located?", options: ["Africa", "Asia", "South America", "Europe"], answer: 0, explanation: "The Nile flows northward through northeastern Africa, passing through 11 countries." },
-  { category: "Geography", q: "What is the smallest continent by area?", options: ["Australia", "Europe", "Antarctica", "South America"], answer: 0, explanation: "Australia (Oceania) is the smallest continent at about 7.7 million km²." },
-  { category: "Geography", q: "Which country's flag has a red upper half, white lower half, with a crescent moon and five stars?", options: ["Singapore", "Indonesia", "Malaysia", "Brunei"], answer: 0, explanation: "Singapore's flag — the crescent represents a rising nation, and the five stars represent democracy, peace, progress, justice, and equality." },
 
   // --- VISUAL IQ ---
   { category: "Visual IQ", q: "A pattern goes: Black, White, Black, White, Black, White... What comes next?", options: ["Black", "White", "Grey", "None"], answer: 0, explanation: "Simple alternating pattern — after White, the next is Black." },
@@ -964,7 +972,7 @@ function loadQuestion() {
   document.getElementById('scoreDisplay').textContent = score;
   document.getElementById('streakDisplay').textContent = streak;
   document.getElementById('categoryTag').textContent = q.category;
-  document.getElementById('questionText').textContent = q.q;
+  document.getElementById('questionText').innerHTML = q.q;
   document.getElementById('questionNum').textContent = `Question ${current + 1} of ${questions.length}`;
 
   const shuffledOpts = shuffle(q.options);
@@ -1152,5 +1160,16 @@ function restartQuiz() {
   document.getElementById('introScreen').style.display = 'block';
 }
 </script>
+<style>
+  .signature {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 0.72rem;
+    color: #2a2a45;
+    letter-spacing: 0.5px;
+  }
+  .signature:hover { color: #555; transition: color 0.4s; }
+</style>
+<div class="signature">crafted by umarosli86</div>
 </body>
 </html>
