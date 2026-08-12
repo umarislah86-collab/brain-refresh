@@ -899,6 +899,88 @@ function soundTimeUp() {
   setTimeout(() => playTone(330, 'square', 0.2, 0.2), 100);
 }
 
+// --- BACKGROUND MUSIC ENGINE ---
+let bgNodes = [];
+let bgInterval = null;
+let bgActive = false;
+
+function startBgMusic() {
+  stopBgMusic();
+  bgActive = true;
+  try { getAudioCtx(); } catch(e) { return; }
+  _scheduleBgLoop();
+}
+
+function stopBgMusic() {
+  bgActive = false;
+  clearInterval(bgInterval);
+  bgNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+  bgNodes = [];
+}
+
+function _scheduleBgLoop() {
+  if (!bgActive) return;
+  _playBgFrame();
+  bgInterval = setInterval(() => {
+    if (!bgActive) { clearInterval(bgInterval); return; }
+    _playBgFrame();
+  }, 500);
+}
+
+function _playBgFrame() {
+  if (!bgActive) return;
+  const pct = timeLeft / TIMER_SECONDS; // 1.0 = full time, 0 = expired
+
+  try {
+    const ctx = getAudioCtx();
+
+    // ---- DRONE: low ambient hum, always present ----
+    const droneFreq = 55 + (1 - pct) * 30; // rises from 55Hz to 85Hz
+    const droneVol  = 0.04 + (1 - pct) * 0.04;
+    _makeNode(ctx, droneFreq, 'sine', 0.55, droneVol);
+
+    // ---- PULSE: heartbeat-like low thud ----
+    // starts slow, gets faster and louder as time runs out
+    const pulseRate = pct > 0.5 ? 1200 : pct > 0.25 ? 700 : 350; // ms between pulses
+    if (!bgActive) return;
+    // only play pulse on beat frames
+    const now = Date.now();
+    if (!_playBgFrame._lastPulse || now - _playBgFrame._lastPulse >= pulseRate) {
+      _playBgFrame._lastPulse = now;
+      const pulseVol = 0.03 + (1 - pct) * 0.1;
+      _makeNode(ctx, 80, 'sine', 0.08, pulseVol);
+      if (pct < 0.4) _makeNode(ctx, 120, 'triangle', 0.06, pulseVol * 0.6);
+    }
+
+    // ---- TENSION LAYER: high shimmer when time is low ----
+    if (pct < 0.5) {
+      const shimmerVol = (0.5 - pct) * 0.06;
+      const shimmerFreq = 400 + Math.sin(Date.now() / 200) * 30;
+      _makeNode(ctx, shimmerFreq, 'sine', 0.5, shimmerVol);
+    }
+
+    // ---- PANIC LAYER: rapid staccato when < 25% time left ----
+    if (pct < 0.25) {
+      const panicVol = (0.25 - pct) * 0.3;
+      _makeNode(ctx, 220, 'square', 0.08, panicVol * 0.15);
+    }
+
+  } catch(e) {}
+}
+
+function _makeNode(ctx, freq, type, dur, vol) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+  osc.start(); osc.stop(ctx.currentTime + dur);
+  bgNodes.push(osc);
+  // clean up old stopped nodes periodically
+  if (bgNodes.length > 40) bgNodes = bgNodes.slice(-20);
+}
+
 // --- SMART RANDOMIZATION (localStorage) ---
 const SEEN_KEY = 'br_seen_ids';
 function getSeenIds() {
@@ -994,6 +1076,7 @@ function loadQuestion() {
   nextBtn.className = 'next-btn';
   nextBtn.textContent = current === questions.length - 1 ? 'See Results →' : 'Next Question →';
   startTimer();
+  startBgMusic();
 }
 
 function selectOption(btn, opt, correctOption) {
@@ -1007,6 +1090,7 @@ function selectOption(btn, opt, correctOption) {
 
 function submitAnswer() {
   if (!selectedOption || answered) return;
+  stopBgMusic();
   const { btn, opt, correctOption } = selectedOption;
   answered = true;
   clearInterval(timerInterval);
@@ -1059,6 +1143,7 @@ function timeUp() {
   answered = true;
   streak = 0;
   selectedOption = null;
+  stopBgMusic();
   soundTimeUp();
   document.getElementById('submitBtn').className = 'submit-btn';
   const q = questions[current];
@@ -1101,80 +1186,4 @@ async function showResult() {
     [0.9,  1.01, "Flawless.",       "Perfect (or near-perfect) score. Genuinely rare."]
   ];
   for (const [lo, hi, v, s] of verdicts) {
-    if (pct >= lo && pct < hi) {
-      document.getElementById('verdict').textContent = v;
-      document.getElementById('verdictSub').textContent = s;
-      break;
-    }
-  }
-
-  const statusEl = document.getElementById('saveStatus');
-  statusEl.textContent = 'Saving your score...';
-  statusEl.className = 'save-status';
-  let saved = false;
-  if (typeof window._saveScore === 'function') {
-    saved = await window._saveScore(currentUsername, score, questions.length, timeTaken);
-  }
-  statusEl.textContent = saved ? '✓ Score saved!' : '✗ Could not save score.';
-  statusEl.className = saved ? 'save-status ok' : 'save-status err';
-  renderLeaderboard();
-}
-
-function fmtTime(s) {
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
-}
-
-async function renderLeaderboard() {
-  const el = document.getElementById('leaderboardList');
-  if (typeof window._loadLeaderboard !== 'function') {
-    el.innerHTML = '<div class="lb-loading">Leaderboard unavailable.</div>'; return;
-  }
-  const records = await window._loadLeaderboard();
-  if (!records || records.length === 0) {
-    el.innerHTML = '<div class="lb-loading">No scores yet. You\'re the first!</div>'; return;
-  }
-  const medals = ['🥇', '🥈', '🥉'];
-  const rankClasses = ['gold', 'silver', 'bronze'];
-  el.innerHTML = records.map((r, i) => {
-    const isMe = r.username?.toLowerCase() === currentUsername.toLowerCase();
-    const rankLabel = i < 3
-      ? `<span class="lb-rank ${rankClasses[i]}">${medals[i]}</span>`
-      : `<span class="lb-rank">${i + 1}</span>`;
-    const timeStr = r.timeTaken ? `<span class="lb-time">${fmtTime(r.timeTaken)}</span>` : '';
-    return `<div class="lb-row ${isMe ? 'me' : ''}">
-      ${rankLabel}
-      <span class="lb-name ${isMe ? 'me' : ''}">${esc(r.username || '?')}${isMe ? ' (you)' : ''}</span>
-      <span class="lb-score">${r.percentage ?? '?'}%${timeStr}</span>
-    </div>`;
-  }).join('');
-}
-
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function restartQuiz() {
-  document.getElementById('resultScreen').style.display = 'none';
-  document.getElementById('introScreen').style.display = 'block';
-}
-</script>
-<style>
-  .signature {
-    position: fixed;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.7rem;
-    color: #1e1e35;
-    letter-spacing: 0.5px;
-    pointer-events: none;
-    white-space: nowrap;
-    transition: color 0.4s;
-  }
-  .signature:hover { color: #444; pointer-events: auto; }
-</style>
-<div class="signature">crafted by umarosli86</div>
-</body>
-</html>
+    if
