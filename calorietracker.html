@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalorieTracker — Admin</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0D0D0D; color: #ddd; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; }
+    h1 { color: #4CAF50; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+    .subtitle { color: #444; font-size: 12px; margin-bottom: 28px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: #1A1A2E; border: 1px solid #2a2a3a; border-radius: 14px; padding: 20px; }
+    .card h2 { color: #555; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px; }
+    .stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+    .stat-val { color: #fff; font-size: 28px; font-weight: bold; }
+    .stat-label { color: #555; font-size: 11px; }
+    .bmi-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 6px; }
+    .chart-wrap { position: relative; height: 180px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { color: #555; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 8px 0; text-align: left; border-bottom: 1px solid #2a2a2a; }
+    tbody td { padding: 10px 0; border-bottom: 1px solid #1a1a1a; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    .kcal { color: #4CAF50; font-weight: bold; }
+    .kcal-burned { color: #64B5F6; font-weight: bold; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; background: #2a2a3a; color: #888; margin-left: 6px; }
+    .loading { color: #444; text-align: center; padding: 40px; }
+    .refresh-btn { background: #4CAF50; color: #fff; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+    .refresh-btn:hover { background: #45a049; }
+    .goal-bar-bg { height: 6px; background: #2a2a2a; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .goal-bar-fill { height: 6px; border-radius: 3px; transition: width 0.5s; }
+    .section-title { color: #555; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 24px 0 12px; }
+    .empty { color: #333; font-size: 13px; text-align: center; padding: 20px; }
+
+    /* Login screen */
+    #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; }
+    #login-screen .login-box { background: #1A1A2E; border: 1px solid #2a2a3a; border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; }
+    #login-screen h2 { color: #4CAF50; font-size: 22px; margin-bottom: 6px; }
+    #login-screen p { color: #555; font-size: 13px; margin-bottom: 24px; }
+    .form-label { color: #666; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; margin-top: 14px; display: block; }
+    .form-input { width: 100%; background: #2a2a3a; color: #fff; border: 1px solid #3a3a4a; border-radius: 10px; padding: 12px 14px; font-size: 15px; outline: none; }
+    .form-input:focus { border-color: #4CAF50; }
+    .login-btn { width: 100%; background: #4CAF50; color: #fff; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    .login-btn:hover { background: #45a049; }
+    .login-btn:disabled { background: #2a5c2a; cursor: not-allowed; }
+    .login-error { color: #FF5252; font-size: 13px; margin-top: 10px; text-align: center; min-height: 20px; }
+
+    /* Top bar */
+    #topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .user-info { color: #555; font-size: 12px; }
+    .logout-btn { background: none; border: 1px solid #333; color: #888; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+    .logout-btn:hover { border-color: #FF5252; color: #FF5252; }
+    .export-btn { border: none; padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    .export-excel { background: #1a3a1a; color: #4CAF50; border: 1px solid #2a4a2a; }
+    .export-excel:hover { background: #2a4a2a; }
+    .export-pdf { background: #1a1a3a; color: #64B5F6; border: 1px solid #2a2a4a; }
+    .export-pdf:hover { background: #2a2a4a; }
+
+    /* User selector */
+    #user-selector { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    #user-selector label { color: #555; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+    #uid-input { background: #1a1a2e; border: 1px solid #2a2a3a; color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 13px; flex: 1; min-width: 200px; }
+    #uid-input:focus { outline: none; border-color: #4CAF50; }
+    .load-uid-btn { background: #2a2a3a; color: #aaa; border: none; padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    .load-uid-btn:hover { background: #3a3a4a; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>🥗 Admin</h2>
+    <p>CalorieTracker — Log masuk untuk lihat data</p>
+    <label class="form-label">Emel</label>
+    <input id="login-email" class="form-input" type="email" placeholder="nama@emel.com" />
+    <label class="form-label">Kata Laluan</label>
+    <input id="login-password" class="form-input" type="password" placeholder="••••••••" />
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Log Masuk</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD (hidden until logged in) -->
+<div id="dashboard" style="display:none">
+  <div id="topbar">
+    <div>
+      <h1>CalorieTracker — Admin</h1>
+      <p class="subtitle" id="sync-time">Memuatkan data...</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="user-info" id="user-email-display"></span>
+      <button class="export-btn export-excel" onclick="exportExcel()">⬇ Excel</button>
+      <button class="export-btn export-pdf" onclick="exportPDF()">⬇ PDF</button>
+      <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      <button class="logout-btn" onclick="doLogout()">Log Keluar</button>
+    </div>
+  </div>
+
+  <!-- UID selector (to view other users if you're the admin) -->
+  <div id="user-selector">
+    <label>Lihat UID:</label>
+    <input id="uid-input" placeholder="UID pengguna (kosong = saya sendiri)" />
+    <button class="load-uid-btn" onclick="loadAll()">Muatkan</button>
+  </div>
+
+  <div class="grid">
+    <div class="card" id="card-weight"><h2>Berat &amp; BMI</h2><div class="loading">⏳</div></div>
+    <div class="card" id="card-goal"><h2>Sasaran Kalori</h2><div class="loading">⏳</div></div>
+    <div class="card" id="card-profile"><h2>Profil</h2><div class="loading">⏳</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h2>Trend Berat Badan</h2>
+    <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h2>Sejarah Kalori (14 Hari)</h2>
+    <div class="chart-wrap"><canvas id="calorieChart"></canvas></div>
+  </div>
+
+  <p class="section-title">Rekod Makanan Terkini</p>
+  <div class="card" style="margin-bottom:16px; overflow-x:auto">
+    <div id="food-table"><div class="loading">⏳</div></div>
+  </div>
+
+  <p class="section-title">Aktiviti Terkini</p>
+  <div class="card" style="margin-bottom:40px; overflow-x:auto">
+    <div id="activity-table"><div class="loading">⏳</div></div>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: 'AIzaSyAalf654KnSepgPUsie19L09csRCjV2b2I',
+    authDomain: 'cal-track-9c21a.firebaseapp.com',
+    projectId: 'cal-track-9c21a',
+    storageBucket: 'cal-track-9c21a.firebasestorage.app',
+    messagingSenderId: '34447032805',
+    appId: '1:34447032805:web:8c677958ccfe8f90a7ef0c',
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  const MONTHS = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
+  const DAYS = ['Ahd','Isn','Sel','Rab','Kha','Jum','Sab'];
+
+  // ── Auth ────────────────────────────────────────────
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('user-email-display').textContent = user.email;
+      // ── Export Excel ─────────────────────────────────────
+  function exportExcel() {
+    try {
+      if (!_data.food.length && !_data.acts.length && !_data.weights.length) {
+        alert('Tiada data untuk dieksport. Muatkan data dahulu.'); return;
+      }
+      const wb = XLSX.utils.book_new();
+      const catMap = { sarapan:'Sarapan', tengahari:'Tengah Hari', malam:'Malam', snek:'Snek' };
+
+      // Sheet 1: Makanan
+      const foodRows = [['Tarikh','Masa','Nama Makanan','Kategori','Kalori (kcal)','Protein (g)','Karbohidrat (g)','Lemak (g)']];
+      _data.food.forEach(e => {
+        const protein = (e.items||[]).reduce((s,i) => s+(i.protein||0), 0);
+        const carbs   = (e.items||[]).reduce((s,i) => s+(i.karbohidrat||0), 0);
+        const fat     = (e.items||[]).reduce((s,i) => s+(i.lemak||0), 0);
+        foodRows.push([e.date||'', e.time||'', e.name||'', catMap[e.category]||e.category||'', e.calories||0, Math.round(protein*10)/10, Math.round(carbs*10)/10, Math.round(fat*10)/10]);
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(foodRows), 'Makanan');
+
+      // Sheet 2: Aktiviti
+      const actRows = [['Tarikh','Masa','Aktiviti','Tempoh (min)','Kalori Dibakar (kcal)']];
+      _data.acts.forEach(a => actRows.push([a.date||'', a.time||'', a.name||'', a.duration||0, a.caloriesBurned||0]));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(actRows), 'Aktiviti');
+
+      // Sheet 3: Berat Badan
+      const weightRows = [['Tarikh','Berat (kg)','BMI']];
+      _data.weights.forEach(w => {
+        const bmi = _data.profile?.height ? (w.weight / Math.pow(_data.profile.height/100, 2)).toFixed(1) : '';
+        weightRows.push([w.date||'', w.weight||0, bmi]);
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(weightRows), 'Berat Badan');
+
+      // Sheet 4: Ringkasan Harian
+      const allDates = [...new Set([..._data.food.map(e=>e.date), ..._data.acts.map(e=>e.date)])].sort((a,b) => parseDateKey(b) - parseDateKey(a));
+      const summaryRows = [['Tarikh','Kalori Dimakan','Kalori Dibakar','Kalori Bersih','Sasaran','Lebihan/Kurangan','Bil. Makanan','Bil. Aktiviti']];
+      allDates.forEach(date => {
+        const dayFood = _data.food.filter(e=>e.date===date);
+        const dayActs = _data.acts.filter(e=>e.date===date);
+        const consumed = dayFood.reduce((s,e)=>s+(e.calories||0),0);
+        const burned   = dayActs.reduce((s,e)=>s+(e.caloriesBurned||0),0);
+        const net      = consumed - burned;
+        summaryRows.push([date, consumed, burned, net, _data.goal, net - _data.goal, dayFood.length, dayActs.length]);
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Ringkasan Harian');
+
+      const today = new Date().toLocaleDateString('ms-MY').replace(/\//g,'-');
+      XLSX.writeFile(wb, `CalorieTracker_${_data.uid}_${today}.xlsx`);
+    } catch(e) {
+      alert('Ralat Excel: ' + e.message);
+    }
+  }
+
+  // ── Export PDF ───────────────────────────────────────
+  function exportPDF() {
+    try {
+      if (!_data.food.length && !_data.acts.length && !_data.weights.length) {
+        alert('Tiada data untuk dieksport. Muatkan data dahulu.'); return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const today = new Date().toLocaleDateString('ms-MY');
+
+      // Header
+      doc.setFillColor(26, 26, 46);
+      doc.rect(0, 0, 210, 30, 'F');
+      doc.setTextColor(76, 175, 80);
+      doc.setFontSize(16); doc.setFont('helvetica','bold');
+      doc.text('CALORIE TRACKER', 14, 13);
+      doc.setFontSize(9); doc.setFont('helvetica','normal');
+      doc.setTextColor(85, 85, 85);
+      doc.text('Laporan Eksport  |  UID: ' + _data.uid + '  |  ' + today, 14, 21);
+
+      let y = 38;
+
+      // Profile box
+      if (_data.profile) {
+        const p = _data.profile;
+        const mults = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725 };
+        const bmr = p.gender==='lelaki' ? 10*p.weight+6.25*p.height-5*p.age+5 : 10*p.weight+6.25*p.height-5*p.age-161;
+        const tdee = Math.round(bmr*(mults[p.activityLevel]||1.55));
+        doc.setFillColor(26, 26, 46);
+        doc.roundedRect(14, y, 182, 22, 3, 3, 'F');
+        doc.setFontSize(8); doc.setTextColor(85, 85, 85);
+        doc.text('Profil: ' + p.weight + 'kg  |  ' + p.height + 'cm  |  ' + p.age + ' tahun  |  ' + p.gender + '  |  TDEE: ' + tdee + ' kcal/hari  |  Sasaran: ' + _data.goal + ' kcal', 20, y+8);
+        const latestW = _data.weights[0];
+        if (latestW) {
+          const bmi = (latestW.weight / Math.pow(p.height/100,2)).toFixed(1);
+          doc.text('Berat terkini: ' + latestW.weight + ' kg  |  BMI: ' + bmi, 20, y+16);
+        }
+        y += 30;
+      }
+
+      const headStyle = { fillColor: [26,26,46], textColor: [76,175,80], fontStyle: 'bold' };
+      const bodyStyle = { fontSize:8, cellPadding:2.5, textColor:[200,200,200], fillColor:[13,13,13], lineColor:[42,42,42], lineWidth:0.3 };
+      const altStyle  = { fillColor:[20,20,32] };
+
+      // Daily summary (14 days)
+      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(76, 175, 80);
+      doc.text('Ringkasan 14 Hari Terkini', 14, y); y += 4;
+      const allDates = [];
+      for (let i=0;i<14;i++) { const d=new Date(); d.setDate(d.getDate()-i); allDates.push(d.toLocaleDateString('ms-MY')); }
+      doc.autoTable({
+        startY: y, margin:{left:14,right:14},
+        head: [['Tarikh','Dimakan (kcal)','Dibakar (kcal)','Bersih (kcal)','vs Sasaran']],
+        body: allDates.map(date => {
+          const consumed = _data.food.filter(e=>e.date===date).reduce((s,e)=>s+(e.calories||0),0);
+          const burned   = _data.acts.filter(e=>e.date===date).reduce((s,e)=>s+(e.caloriesBurned||0),0);
+          const net = consumed - burned;
+          const diff = net - _data.goal;
+          return [date, consumed||0, burned||0, net||0, diff===0?'=' : diff>0?('+'+diff):diff];
+        }),
+        styles: bodyStyle, headStyles: headStyle, alternateRowStyles: altStyle,
+      });
+      y = doc.lastAutoTable.finalY + 10;
+
+      // Food table
+      if (_data.food.length) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(76, 175, 80);
+        doc.text('Rekod Makanan (' + _data.food.length + ' rekod)', 14, y); y += 4;
+        const catMap2 = { sarapan:'Sarapan', tengahari:'T.Hari', malam:'Malam', snek:'Snek' };
+        doc.autoTable({
+          startY: y, margin:{left:14,right:14},
+          head: [['Tarikh','Masa','Makanan','Kategori','Kcal']],
+          body: _data.food.slice(0,60).map(e => [e.date||'', e.time||'', (e.name||'').substring(0,38), catMap2[e.category]||e.category||'', e.calories||0]),
+          styles: { ...bodyStyle, fontSize:7.5 }, headStyles: headStyle, alternateRowStyles: altStyle,
+          columnStyles: { 4: { halign:'right' } },
+        });
+        y = doc.lastAutoTable.finalY + 10;
+      }
+
+      // Activity table
+      if (_data.acts.length) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(100, 181, 246);
+        doc.text('Rekod Aktiviti (' + _data.acts.length + ' rekod)', 14, y); y += 4;
+        doc.autoTable({
+          startY: y, margin:{left:14,right:14},
+          head: [['Tarikh','Masa','Aktiviti','Tempoh (min)','Dibakar (kcal)']],
+          body: _data.acts.slice(0,40).map(a => [a.date||'', a.time||'', a.name||'', a.duration||0, a.caloriesBurned||0]),
+          styles: { ...bodyStyle, fontSize:7.5 },
+          headStyles: { fillColor:[26,26,46], textColor:[100,181,246], fontStyle:'bold' },
+          alternateRowStyles: altStyle,
+          columnStyles: { 4: { halign:'right' } },
+        });
+        y = doc.lastAutoTable.finalY + 10;
+      }
+
+      // Weight table
+      if (_data.weights.length) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(76, 175, 80);
+        doc.text('Rekod Berat Badan (' + _data.weights.length + ' rekod)', 14, y); y += 4;
+        doc.autoTable({
+          startY: y, margin:{left:14,right:14},
+          head: [['Tarikh','Berat (kg)','BMI']],
+          body: _data.weights.map(w => {
+            const bmi = _data.profile?.height ? (w.weight/Math.pow(_data.profile.height/100,2)).toFixed(1) : '-';
+            return [w.date||'', w.weight||0, bmi];
+          }),
+          styles: bodyStyle, headStyles: headStyle, alternateRowStyles: altStyle,
+        });
+      }
+
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i=1; i<=pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7); doc.setTextColor(85, 85, 85);
+        doc.text('CalorieTracker  |  Halaman ' + i + '/' + pageCount + '  |  ' + today, 14, 290);
+      }
+
+      doc.save('CalorieTracker_' + _data.uid + '_' + today.replace(/\//g,'-') + '.pdf');
+    } catch(e) {
+      alert('Ralat PDF: ' + e.message);
+    }
+  }
+
+  loadAll();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('dashboard').style.display = 'none';
+    }
+  });
+
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Memproses...';
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+    } catch (e) {
+      const msg = e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential'
+        ? 'Emel atau kata laluan tidak betul.'
+        : e.code === 'auth/invalid-email' ? 'Format emel tidak sah.' : e.message;
+      errEl.textContent = msg;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Log Masuk';
+    }
+  }
+
+  document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  function doLogout() {
+    if (confirm('Log keluar?')) auth.signOut();
+  }
+
+  // ── Helpers ─────────────────────────────────────────
+  function getUID() {
+    const custom = document.getElementById('uid-input').value.trim();
+    return custom || auth.currentUser?.uid;
+  }
+
+  function parseDateKey(key) {
+    const p = key.split('/');
+    if (p.length !== 3) return 0;
+    return new Date(+p[2], +p[1]-1, +p[0]).getTime();
+  }
+
+  function fmtDate(key) {
+    const p = key.split('/');
+    if (p.length !== 3) return key;
+    const d = new Date(+p[2], +p[1]-1, +p[0]);
+    return `${DAYS[d.getDay()]}, ${+p[0]} ${MONTHS[+p[1]-1]} ${p[2]}`;
+  }
+
+  function bmiColor(bmi) {
+    if (bmi < 18.5) return '#64B5F6';
+    if (bmi < 25) return '#4CAF50';
+    if (bmi < 30) return '#FFA726';
+    return '#FF5252';
+  }
+  function bmiLabel(bmi) {
+    if (bmi < 18.5) return 'Kurus';
+    if (bmi < 25) return 'Normal';
+    if (bmi < 30) return 'Berlebihan';
+    return 'Obes';
+  }
+
+  let weightChartInst = null;
+  let calorieChartInst = null;
+  // Global data store for exports
+  let _data = { food: [], acts: [], weights: [], goal: 2000, profile: null, uid: '' };
+
+  // ── Load Data ────────────────────────────────────────
+  async function loadAll() {
+    const uid = getUID();
+    if (!uid) return;
+    document.getElementById('sync-time').textContent = `Memuatkan data UID: ${uid}...`;
+    const userRef = db.collection('users').doc(uid);
+    try {
+      const [settingsSnap, weightSnap, foodSnap, actSnap] = await Promise.all([
+        userRef.collection('settings').doc('main').get(),
+        userRef.collection('weightEntries').get(),
+        userRef.collection('foodEntries').get(),
+        userRef.collection('activityEntries').get(),
+      ]);
+
+      const settings = settingsSnap.exists ? settingsSnap.data() : {};
+      const goal = settings.goal || 2000;
+      const profile = settings.profile || null;
+
+      const weights = weightSnap.docs.map(d => d.data())
+        .sort((a, b) => parseDateKey(b.date) - parseDateKey(a.date));
+      const food = foodSnap.docs.map(d => d.data())
+        .sort((a, b) => parseDateKey(b.date) - parseDateKey(a.date) || (b.time||'').localeCompare(a.time||''));
+      const acts = actSnap.docs.map(d => d.data())
+        .sort((a, b) => parseDateKey(b.date) - parseDateKey(a.date) || (b.time||'').localeCompare(a.time||''));
+
+      _data = { food, acts, weights, goal, profile, uid };
+
+      renderWeightCard(weights, profile);
+      renderGoalCard(goal, food, acts);
+      renderProfileCard(profile);
+      renderWeightChart(weights);
+      renderCalorieChart(food, acts, goal);
+      renderFoodTable(food);
+      renderActivityTable(acts);
+
+      const now = new Date();
+      document.getElementById('sync-time').textContent =
+        `UID: ${uid} · Dikemaskini: ${now.toLocaleDateString('ms-MY')} ${now.toLocaleTimeString('ms-MY', {hour:'2-digit',minute:'2-digit'})}`;
+    } catch (e) {
+      document.getElementById('sync-time').textContent = 'Ralat: ' + e.message;
+    }
+  }
+
+  // ── Render Functions ──────────────────────────────────
+  function renderWeightCard(weights, profile) {
+    const el = document.getElementById('card-weight');
+    if (!weights.length) { el.innerHTML = '<h2>Berat &amp; BMI</h2><div class="empty">Tiada rekod berat</div>'; return; }
+    const latest = weights[0];
+    const bmi = profile?.height ? (latest.weight / Math.pow(profile.height / 100, 2)) : null;
+    const change = weights.length > 1 ? (latest.weight - weights[weights.length-1].weight).toFixed(1) : null;
+    el.innerHTML = `<h2>Berat &amp; BMI</h2>
+      <div class="stat-row"><span class="stat-val">${latest.weight} kg</span><span class="stat-label">${fmtDate(latest.date)}</span></div>
+      ${bmi ? `<span class="bmi-badge" style="background:${bmiColor(bmi)}22;color:${bmiColor(bmi)}">BMI ${bmi.toFixed(1)} · ${bmiLabel(bmi)}</span>` : ''}
+      ${change !== null ? `<p style="color:#888;font-size:12px;margin-top:10px">Perubahan: <strong style="color:${+change<0?'#4CAF50':+change>0?'#FF5252':'#aaa'}">${+change>0?'+':''}${change} kg</strong></p>` : ''}
+      <p style="color:#444;font-size:11px;margin-top:8px">${weights.length} rekod tersimpan</p>`;
+  }
+
+  function renderGoalCard(goal, food, acts) {
+    const el = document.getElementById('card-goal');
+    const todayKey = new Date().toLocaleDateString('ms-MY');
+    const todayKcal = food.filter(e => e.date === todayKey).reduce((s, e) => s + (e.calories||0), 0);
+    const todayBurned = acts.filter(e => e.date === todayKey).reduce((s, e) => s + (e.caloriesBurned||0), 0);
+    const net = todayKcal - todayBurned;
+    const pct = Math.min(net / goal, 1);
+    const color = pct >= 1 ? '#FF5252' : pct >= 0.8 ? '#FFA726' : '#4CAF50';
+    el.innerHTML = `<h2>Sasaran Kalori</h2>
+      <div class="stat-row"><span class="stat-val" style="color:${color}">${net}</span><span class="stat-label">kcal bersih hari ini</span></div>
+      <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:${pct*100}%;background:${color}"></div></div>
+      <p style="color:#555;font-size:11px;margin-top:8px">Sasaran: ${goal} kcal · Berbaki: ${goal-net} kcal</p>
+      ${todayBurned > 0 ? `<p style="color:#64B5F6;font-size:11px;margin-top:4px">Dibakar: ${todayBurned} kcal</p>` : ''}`;
+  }
+
+  function renderProfileCard(profile) {
+    const el = document.getElementById('card-profile');
+    if (!profile) { el.innerHTML = '<h2>Profil</h2><div class="empty">Profil belum ditetapkan</div>'; return; }
+    const actLabels = { sedentary:'Tidak Aktif', light:'Sedikit Aktif', moderate:'Sederhana', active:'Sangat Aktif' };
+    const bmr = profile.gender === 'lelaki'
+      ? 10*profile.weight + 6.25*profile.height - 5*profile.age + 5
+      : 10*profile.weight + 6.25*profile.height - 5*profile.age - 161;
+    const mults = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725 };
+    const tdee = Math.round(bmr * (mults[profile.activityLevel] || 1.55));
+    el.innerHTML = `<h2>Profil</h2>
+      <table><tbody>
+        <tr><td style="color:#555">Berat</td><td style="text-align:right;color:#fff">${profile.weight} kg</td></tr>
+        <tr><td style="color:#555">Tinggi</td><td style="text-align:right;color:#fff">${profile.height} cm</td></tr>
+        <tr><td style="color:#555">Umur</td><td style="text-align:right;color:#fff">${profile.age} tahun</td></tr>
+        <tr><td style="color:#555">Jantina</td><td style="text-align:right;color:#fff">${profile.gender}</td></tr>
+        <tr><td style="color:#555">Aktiviti</td><td style="text-align:right;color:#fff">${actLabels[profile.activityLevel]||profile.activityLevel}</td></tr>
+        <tr><td style="color:#555">TDEE</td><td style="text-align:right;color:#4CAF50;font-weight:bold">${tdee} kcal</td></tr>
+      </tbody></table>`;
+  }
+
+  function renderWeightChart(weights) {
+    const sorted = [...weights].sort((a,b) => parseDateKey(a.date) - parseDateKey(b.date)).slice(-20);
+    const labels = sorted.map(w => { const p=w.date.split('/'); return `${+p[0]} ${MONTHS[+p[1]-1]}`; });
+    const vals = sorted.map(w => w.weight);
+    if (weightChartInst) weightChartInst.destroy();
+    const ctx = document.getElementById('weightChart').getContext('2d');
+    weightChartInst = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Berat (kg)', data: vals, borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,0.1)', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#4CAF50', fill: true }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#555', font:{size:10} }, grid: { color: '#1a1a1a' } },
+                   y: { ticks: { color: '#555', font:{size:10} }, grid: { color: '#1a1a1a' } } } }
+    });
+  }
+
+  function renderCalorieChart(food, acts, goal) {
+    const days = [];
+    for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toLocaleDateString('ms-MY')); }
+    const labels = days.map(k => { const p=k.split('/'); return `${+p[0]}/${+p[1]}`; });
+    const consumed = days.map(k => food.filter(e=>e.date===k).reduce((s,e)=>s+(e.calories||0),0));
+    const burned = days.map(k => acts.filter(e=>e.date===k).reduce((s,e)=>s+(e.caloriesBurned||0),0));
+    const net = consumed.map((c,i) => Math.max(0, c - burned[i]));
+    if (calorieChartInst) calorieChartInst.destroy();
+    const ctx = document.getElementById('calorieChart').getContext('2d');
+    calorieChartInst = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'Bersih', data: net, backgroundColor: net.map(v => v > goal ? '#FF525280' : v > goal*0.8 ? '#FFA72680' : '#4CAF5080'), borderColor: net.map(v => v > goal ? '#FF5252' : v > goal*0.8 ? '#FFA726' : '#4CAF50'), borderWidth: 1 },
+        { label: 'Sasaran', data: days.map(()=>goal), type: 'line', borderColor: '#2a4a2a', borderDash: [4,4], borderWidth: 1, pointRadius: 0, fill: false }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#555', font:{size:10} }, grid: { color: '#1a1a1a' } },
+                   y: { ticks: { color: '#555', font:{size:10} }, grid: { color: '#1a1a1a' } } } }
+    });
+  }
+
+  function renderFoodTable(food) {
+    const el = document.getElementById('food-table');
+    const recent = food.slice(0, 25);
+    if (!recent.length) { el.innerHTML = '<div class="empty">Tiada rekod</div>'; return; }
+    const catEmoji = { sarapan:'🌅', tengahari:'☀️', malam:'🌙', snek:'🍿' };
+    el.innerHTML = `<table>
+      <thead><tr><th>Tarikh</th><th>Masa</th><th>Makanan</th><th>Kategori</th><th style="text-align:right">Kalori</th></tr></thead>
+      <tbody>${recent.map(e => `<tr>
+        <td style="color:#555;white-space:nowrap">${fmtDate(e.date)}</td>
+        <td style="color:#555">${e.time||''}</td>
+        <td>${e.name||''}</td>
+        <td>${catEmoji[e.category]||''} <span style="color:#555;font-size:11px">${e.category||''}</span></td>
+        <td style="text-align:right" class="kcal">${e.calories||0}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
+  function renderActivityTable(acts) {
+    const el = document.getElementById('activity-table');
+    const recent = acts.slice(0, 15);
+    if (!recent.length) { el.innerHTML = '<div class="empty">Tiada rekod aktiviti</div>'; return; }
+    el.innerHTML = `<table>
+      <thead><tr><th>Tarikh</th><th>Masa</th><th>Aktiviti</th><th>Tempoh</th><th style="text-align:right">Dibakar</th></tr></thead>
+      <tbody>${recent.map(a => `<tr>
+        <td style="color:#555;white-space:nowrap">${fmtDate(a.date)}</td>
+        <td style="color:#555">${a.time||''}</td>
+        <td>${a.name||''}</td>
+        <td style="color:#555">${a.duration||0} min</td>
+        <td style="text-align:right" class="kcal-burned">${a.caloriesBurned||0}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+</script>
+</body>
+</html>
